@@ -1,141 +1,176 @@
+# Kaytin Matrangola
+# PGM Final Project
+# Recommender System For Crochet Patterns
+# Requirements: Python 3.9
+
 import csv
 import re
-import pandas as pd
 import requests
 from bs4 import BeautifulSoup
+import pandas as pd
+from pgmpy.models import BayesianModel
+from pgmpy.estimators import MaximumLikelihoodEstimator
+from pgmpy.estimators import ExpectationMaximization as EM
+from pgmpy.inference import VariableElimination
+from pgmpy.inference import BeliefPropagation
+from tkmacosx import *
+import tkinter as tk
+from tkinter import ttk
 
-def parse_details(details_string):
-    """
-    Parse the concatenated details string into a dictionary of individual details.
+class CrochetHelperApp:
+    def __init__(self, master):
 
-    :param details_string: The concatenated string of pattern details.
-    :return: A dictionary with parsed details.
-    """
-    parsed_details = {}
-    # Define patterns for keys that appear in the string
-    patterns = [
-        'Skill Level', 'Yarn Brand', 'Yarn Name',
-        'Yarn Weight', 'Hook Size', 'Stitches', 'Color', 'Category', 'Pattern Details'
-    ]
+        self.master = master
+        master.title("Crochet Helper")
+        master.geometry("400x200")
 
-    # Add a lookahead to each pattern to split the string, without consuming the delimiter
-    split_pattern = '|'.join(f'(?={p})' for p in patterns)
+        # Load data and build model
+        self.data = self.pattern_csv_to_df("crochet_patterns.csv")  # Adjust path as needed
+        self.data['Category'] = self.data.apply(self.update_category, axis=1)
+        self.model = self.build_bayesian_model(self.data)
 
-    # Split the details string by the patterns, keeping the delimiter as part of the split segments
-    segments = re.split(split_pattern, details_string)
-
-    # Process each segment
-    for segment in segments:
-        if segment:
-            # Split each segment into key and value by the first colon found
-            parts = segment.split(':', 1)
-            if len(parts) == 2:
-                key, value = parts
-                parsed_details[key.strip()] = value.strip()
-            else:
-                # Handle case where there's no colon or the field is empty
-                # Assuming the key exists but has no value, assign a default value or None
-                parsed_details[parts[0].strip()] = None  # Or use an empty string '' as default
-
-    return parsed_details
+        # Yarn Weight Input
+        tk.Label(master, text="Yarn Weight:", font=("Helvetica", 12)).grid(row=0, sticky=tk.W)
+        self.yarn_weight_var = tk.StringVar()
+        self.yarn_weight_entry = ttk.Combobox(master, textvariable=self.yarn_weight_var)
+        self.yarn_weight_entry['values'] = ('Light', 'Medium', 'Bulky')
+        self.yarn_weight_entry.grid(row=0, column=1)
 
 
-def extract_pattern_details(pattern_url):
-    """
-    Extracts and parses details from a single pattern page.
-    """
-    details = {}
-    response = requests.get(pattern_url, verify=False)
-    if response.status_code == 200:
-        soup = BeautifulSoup(response.text, 'html.parser')
+        # Stitches Input
+        tk.Label(master, text="Stitches:", font=("Helvetica", 12)).grid(row=1, sticky=tk.W)
+        self.stitches_var = tk.StringVar()
+        self.stitches_entry = ttk.Entry(master, textvariable=self.stitches_var)
+        self.stitches_entry.grid(row=1, column=1)
 
-        # Assuming the details are within a specific section - you'll need to adjust the selector
-        # This example assumes all details are in a text block within a 'div' with a specific class or id
-        details_section = soup.select_one('#block-2 > div > dl')
-        category_section = soup.select_one('#block-2 > div > dl > dd:nth-child(2) > ul > li:nth-child(7) > a')
+        # Button to Perform Inference
+        self.infer_button = ttk.Button(master, text="Get Recommendations", command=self.perform_inference)
+        self.infer_button.grid(row=2, column=0, columnspan=2)
 
-        if details_section:
-            # Convert the entire details section into text
-            details_text = details_section.get_text(separator=' ', strip=True)
-            if category_section:
-                category_section = "Category: " + category_section.get_text(separator=' ', strip=True)
-                details_text, cat = details_text.split("Category")
-                details_text += category_section
-            # Now parse this text to extract individual details
-            details = parse_details(details_text)
-            details["Pattern Link"] = pattern_url
-    else:
-        print(f"Failed to retrieve pattern page. Status code: {response.status_code}")
-    return details
+        # Output Labels
+        self.hook_size_label = tk.Label(master, text="Recommended Hook Size:", font=("Helvetica", 12))
+        self.hook_size_label.grid(row=3, column=0, columnspan=2)
 
-def scrape_crochet_patterns(url):
-    patterns = {}
-    response = requests.get(url, verify=False)
-    if response.status_code == 200:
-        soup = BeautifulSoup(response.text, 'html.parser')
-        articles = soup.find_all('article')#, class_='kt-blocks-post-grid-item')
-        for article in articles:
-            # Look for an h2 or h3 within each article for the pattern title
-            title_tag = article.find(['h2', 'h3'])
-            if title_tag and title_tag.find('a', href=True):
-                a = title_tag.find('a', href=True)
-                print(f"Title: {a.text.strip()}, URL: {a['href']}")
-                pattern_name = a.text.strip()
-                pattern_url = a['href']
-                details = extract_pattern_details(pattern_url)
-                patterns[pattern_name] = details
-    else:
-        print(f"Failed to retrieve the webpage. Status code: {response.status_code}")
-    return patterns
+        self.skill_level_label = tk.Label(master, text="Skill Level for Your Stitches:", font=("Helvetica", 12))
+        self.skill_level_label.grid(row=4, column=0, columnspan=2)
+        # Define the function to update the category based on the title
+    def update_category(self, row):
+        title_lower = row['Title'].lower()
+        if any(word in title_lower for word in ['blanket', 'throw']):
+            return 'Blanket'
+        elif any(word in title_lower for word in ['beanie', 'hat', 'ear']):
+            return 'Headwear'
+        elif any(word in title_lower for word in ['scarf', 'cowl', 'neck']):
+            return 'Scarf'
+        elif any(word in title_lower for word in ['shawl', 'vest', 'cardigan', 'sweater', 'hoodie', 'wrap', 'shrug', 'poncho', 'top', 'skirt', 'dress', 'afgan']):
+            return 'Clothing'
+        elif 'basket' in title_lower:
+            return 'Basket'
+        elif any(word in title_lower for word in ['coaster', 'placemat', 'cozy', 'ornament']):
+            return 'Accessory'
+        elif any(word in title_lower for word in ['amigurumi', 'penguin', 'octopus', 'jellyfish', 'owl', 'dog', 'lion', 'bear', 'monkey', 'luffy', 'bee', 'panda', 'gnome', 'santa', 'frankenstein', 'pumpkin']):
+            return 'Amigurumi'
+        else:
+            return 'Stitch/Granny Square'
+
+    def pattern_csv_to_df(self, filename):
+        #TODO : where we can find numbers in the string make it int ie weight and skill level
+        # Use pandas to read the CSV file
+        df = pd.read_csv(filename)
+        # Remove whitespace from values in all columns
+        df = df.applymap(lambda x: x.strip() if isinstance(x, str) else x)
+        #df['StitchesList'] = df['Stitches'].str.split(',')
+        # Assuming 'data' is your DataFrame and 'Stitches' contains lists of stitches
+        #df['Stitches_Combined'] = df['StitchesList'].apply(lambda stitches: '_'.join(sorted(set(stitches))))
+        df = df.fillna(" ")
+        return df
+
+    def build_bayesian_model(self, data):
+        # Define the structure of the Bayesian Network according to the specified relationships
+        model_structure = [
+            ('Yarn Weight', 'Hook Size'),  # Yarn Weight influences Hook Size
+            ('Yarn Weight', 'Skill Level'),  # Yarn Weight influences Skill Level
+            ('Hook Size', 'Skill Level'),  # Hook Size influences Skill Level
+            #('Skill Level', 'Stitches'),  # Skill Level influences Stitches
+            ('Yarn Name', 'Yarn Weight'),  # Yarn Type influences Yarn Weight
+            #('Stitches', 'Category')  # Stitches influence Category
+        ]
+        # Initialize the model with the defined structure
+        model = BayesianModel(model_structure)
+        # Learn the parameters from the data using Maximum Likelihood Estimation
+        # Use EM for parameter learning with missing data
+        #data.drop('Stitches', axis=1, inplace=True)
+
+        model.fit(data, estimator=EM)
+        return model
+
+    def perform_inference(self, bayesian_model, query_variable, evidence_dict):
+        """
+        General function to perform inference on a Bayesian model.
+        """
+        inference = VariableElimination(bayesian_model)
+        result = inference.query(variables=[query_variable], evidence=evidence_dict)
+        return result
+
+    def query_hook_size_given_yarn_weight(self, bayesian_model, yarn_weight):
+        result = CrochetHelperApp.perform_inference(bayesian_model, 'Hook Size', {'Yarn Weight': yarn_weight})
+        return result
+
+    def query_skill_level_given_stitches(self, bayesian_model, stitches_type):
+        #result = perform_inference(bayesian_model, 'Skill Level', {'Stitches': stitches_type})
+        #return result
+        print("")
+
+    def make_decision(self, model, user_preferences):
+        """
+        Makes a decision based on the Bayesian model and user preferences.
+        """
+        inference = VariableElimination(model)
+
+        # Assume 'user_preferences' is a dict like {'Yarn Weight': 'Light', 'Skill Level': 'Beginner'}
+        # Let's say the user wants a recommendation for 'Stitches'
+        query_result = inference.query(variables=['Stitches'], evidence=user_preferences)
+
+        # Making a decision based on the highest probability
+        recommended_stitches = max(query_result.values, key=query_result.values.get)
+        belief_propagation = BeliefPropagation(model)
+        result = belief_propagation.query(variables=['Stitches'], evidence=user_preferences)
+        return recommended_stitches
 
 
+    def manual_inference(self, data, target, evidence):
+        """
+        Perform manual inference based on frequency counts from the dataset.
+        """
+        # Filter the data based on the evidence
+        filtered_data = data
+        for var, val in evidence.items():
+            filtered_data = filtered_data[filtered_data[var] == val]
 
+        # Compute the probability distribution of the target variable
+        prob_dist = filtered_data[target].value_counts(normalize=True).to_dict()
 
-def scrape_and_store_patterns_easycrochet():
-    url = 'https://easycrochet.com/all-free-crochet-patterns/'
-    patterns = scrape_crochet_patterns(url)
+        return prob_dist
 
-    url_clothing = 'https://easycrochet.com/category/crochet-patterns/crochet-clothing/'
-    patterns_clothing = scrape_crochet_patterns(url_clothing)
-    patterns.update(patterns_clothing)
-    url_blankets = 'https://easycrochet.com/category/crochet-patterns/crochet-blankets/'
-    patterns_blankets = scrape_crochet_patterns(url_blankets)
-    patterns.update(patterns_blankets)
-    url_hats = 'https://easycrochet.com/category/crochet-patterns/headwear/hats/'
-    patterns_hats = scrape_crochet_patterns(url_clothing)
-    patterns.update(patterns_hats)
-    url_amigurumi = 'https://easycrochet.com/category/crochet-patterns/amigurumi-crochet-patterns/'
-    patterns_amigurumi = scrape_crochet_patterns(url_amigurumi)
-    patterns.update(patterns_amigurumi)
-    url_holiday = 'https://easycrochet.com/category/crochet-patterns/crochet-holiday/'
-    patterns_holiday = scrape_crochet_patterns(url_holiday)
-    patterns.update(patterns_holiday)
-
-    # Define your CSV file name
-    csv_file = "crochet_patterns.csv"
-
-    # Open the file in write mode
-    with open(csv_file, mode='w', newline='', encoding='utf-8') as file:
-        writer = csv.writer(file)
-        # Write the header
-        writer.writerow(
-            ['Skill Level', 'Yarn Brand', 'Yarn Name',
-             'Yarn Weight', 'Hook Size', 'Stitches', 'Color', 'Category', 'Pattern Details'])
-
-        # Write pattern details
-        for pattern_name, details in patterns.items():
-            writer.writerow([pattern_name] + [details.get(key, '') for key in
-                                              ['Skill Level', 'Yarn Brand', 'Yarn Name', 'Yarn Weight', 'Hook Size',
-                                               'Stitches', 'Color', 'Category']])
-
-def pattern_csv_to_df(filename):
-    # Use pandas to read the CSV file
-    df = pd.read_csv(filename)
-    # Remove whitespace from values in all columns
-    df = df.applymap(lambda x: x.strip() if isinstance(x, str) else x)
-    df['Stitches'] = df['Stitches'].str.split(',')
-    return df
 
 if __name__ == '__main__':
-    scrape_and_store_patterns_easycrochet()
-    pattern_df = pattern_csv_to_df("crochet_patterns.csv")
+    #scrape_and_store_patterns_easycrochet()
+    #TODO: think about as inference problem (module 6)
+    pattern_df = CrochetHelperApp.pattern_csv_to_df("crochet_patterns.csv")
+    bayesian_model = CrochetHelperApp.build_bayesian_model(pattern_df)
+    yarn_weight_example = 'Weight 4 - Medium'
+    stitches_example = 'Single Crochet'
+
+    hook_size_result = CrochetHelperApp.query_hook_size_given_yarn_weight(bayesian_model, yarn_weight_example)
+    skill_level_result = CrochetHelperApp.query_skill_level_given_stitches(bayesian_model, stitches_example)
+#
+    print("Hook Size Given Yarn Weight:")
+    print(hook_size_result)
+    print("\nSkill Level Given Stitches:")
+    print(skill_level_result)
+    #root = tk.Tk()
+    #print("bla")
+    #app = CrochetHelperApp(root)
+    #print("hehe")
+    #root.mainloop()
+    # IDEA Semi-supervised Learning: Allow users to provide feedback on model predictions (e.g., successful projects) to improve the model over time.
