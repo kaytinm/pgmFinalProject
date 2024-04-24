@@ -141,6 +141,17 @@ def plot_bayesian_network(model_structure):
     plt.tight_layout()
     plt.show()
 
+import pickle
+
+def save_model(model, filename):
+    with open(filename, 'wb') as f:
+        pickle.dump(model, f)
+
+def load_model(filename):
+    with open(filename, 'rb') as f:
+        model = pickle.load(f)
+    return model
+
 def build_and_learn_bayesian_model(data, model_structure):
     # Initialize Bayesian Model
     model = BayesianNetwork(model_structure)
@@ -148,7 +159,7 @@ def build_and_learn_bayesian_model(data, model_structure):
     #plot_bayesian_network(model_structure) #TODO: Clean Up
     # Fit the model using an appropriate estimator
     model.fit(data, estimator=MaximumLikelihoodEstimator) #Maybe MLE
-
+    save_model(model, 'Bayseian_Model_Crochet_Patterns1.pkl')
     return model
 
 from pgmpy.inference import VariableElimination
