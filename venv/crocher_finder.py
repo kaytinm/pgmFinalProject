@@ -3,37 +3,97 @@ import re
 import requests
 from bs4 import BeautifulSoup
 import pandas as pd
-from pgmpy.models import BayesianModel
+from pgmpy.models import BayesianNetwork
 from pgmpy.estimators import MaximumLikelihoodEstimator
 from pgmpy.estimators import ExpectationMaximization as EM
 from pgmpy.inference import VariableElimination
 from pgmpy.inference import BeliefPropagation
 from pgmpy.estimators import MaximumLikelihoodEstimator, ExpectationMaximization as EM
 import pandas as pd
+import numpy as np
 
+def update_category(row):
+    title_lower = row['Title'].lower()
+    if any(word in title_lower for word in ['blanket', 'throw']):
+        return 'Blanket'
+    elif any(word in title_lower for word in ['beanie', 'hat', 'ear']):
+        return 'Headwear'
+    elif any(word in title_lower for word in ['scarf', 'cowl', 'neck']):
+        return 'Scarf'
+    elif any(word in title_lower for word in
+             ['shawl', 'vest', 'cardigan', 'sweater', 'hoodie', 'wrap', 'shrug', 'poncho', 'top', 'skirt', 'dress',
+              'afgan']):
+        return 'Clothing'
+    elif 'basket' in title_lower:
+        return 'Basket'
+    elif any(word in title_lower for word in ['coaster', 'placemat', 'cozy', 'ornament']):
+        return 'Accessory'
+    elif any(word in title_lower for word in
+             ['amigurumi', 'penguin', 'octopus', 'jellyfish', 'owl', 'dog', 'lion', 'bear', 'monkey', 'luffy', 'bee',
+              'panda', 'gnome', 'santa', 'frankenstein', 'pumpkin']):
+        return 'Amigurumi'
+    else:
+        return 'Stitch/Granny Square'
 
+def extract_number(text):
+    import re  # Regular expression module
+    # Search for numbers in the string
+    match = re.search(r'\d+', text)
+    if match:
+        return int(match.group())  # Return the number if found
+    return text  # Return the original text if no number is found
+# Function to find numbers, calculate the mean if multiple
+
+#TODO: Shouldn't actually be extracting mean size change later
+def extract_mean_size(text):
+    import re
+    # Find all numbers (integers or decimals) before "mm"
+    numbers = re.findall(r'\b\d+\.?\d*(?=\s*mm)', text)
+    # Convert all found numbers to float and calculate mean if multiple values are found
+    if numbers:
+        numbers = list(map(float, numbers))  # Convert to float for accurate mean calculation
+        if len(numbers) > 1:
+            return sum(numbers) / len(numbers)  # Return the mean of the numbers
+        return numbers[0]  # Return the number directly if only one
+    return text  # Return the original text if no numbers are found
+
+def check_multiple_colors(color):
+    if str(color) == 'nan':
+        return 'NA'
+    elif',' in color:
+        return 'Multi'
+    return color
+
+def preprocess_stitch_names(stitch_column):
+    # Remove Back Loop and front loop to reduce model complexity.
+    # The front loop and back loop stitching doesn't impact the difficutlty or much of the structure of the project.
+    # It is more of a mild change on the base stitch type
+    removals = ['Back Loop', 'Front Loop']
+    for removal in removals:
+        stitch_column = stitch_column.replace(removal, '', regex=True)
+    # Remove stitch type before increase and decrease values to reduce model complexity.
+    # The Type of stitch isn't what is notable in this case it is if you are doing an increase or decrease.
+    stitch_column = stitch_column.str.split('(Two Together|Increase)').str[-1].str.strip()
+    return stitch_column
 def pattern_csv_to_df(filename):
     # Read CSV into DataFrame
     df = pd.read_csv(filename)
+    df.dropna(subset=['Skill Level', 'Yarn Weight', 'Hook Size', 'Stitches'], inplace=True)
 
-    # Clean whitespace from all string values in the DataFrame
+    # Clean whitespace
     df = df.applymap(lambda x: x.strip() if isinstance(x, str) else x)
 
-    # Handle numerical conversion for 'Yarn Weight' and 'Skill Level'
-    # Assuming mappings are provided
-    yarn_weight_mapping = {'light': 1, 'medium': 2, 'heavy': 3}
-    skill_level_mapping = {'beginner': 1, 'intermediate': 2, 'expert': 3}
-
-    df['Yarn Weight'] = df['Yarn Weight'].map(yarn_weight_mapping)
-    df['Skill Level'] = df['Skill Level'].map(skill_level_mapping)
-
-    # Handle missing values
-    df.fillna(df.mean(), inplace=True)
-
+    # Handle Different types of values for processing
+    df['Yarn Weight'] = df['Yarn Weight'].apply(extract_number)
+    df['Skill Level'] = df['Skill Level'].apply(extract_number)
+    df['Hook Size'] = df['Hook Size'].apply(extract_mean_size)
+    df['Category'] = df.apply(update_category, axis=1)
+    df['Color'] = df['Color'].apply(check_multiple_colors)
+    df['Stitches'] = preprocess_stitch_names(df['Stitches'])
     return df
 
 
-from pgmpy.models import BayesianModel
+from pgmpy.models import BayesianNetwork
 
 
 def define_bayesian_network_structure():
@@ -43,31 +103,51 @@ def define_bayesian_network_structure():
         ('Yarn Weight', 'Skill Level'),
         ('Hook Size', 'Skill Level'),
         ('Yarn Name', 'Yarn Weight'),
-        ('Category', 'Skill Level'),
+        ('Category', 'Skill Level')
     ]
     return model_structure
 
 
 def preprocess_stitches_for_bayesian_network(data):
     # Identify unique stitches and add binary columns for each stitch
-    unique_stitches = set(stitch for sublist in data['Stitches'].dropna().str.split(',') for stitch in sublist)
+    unique_stitches = set(stitch.strip() for sublist in data['Stitches'].dropna().str.split(',') for stitch in sublist)
+    unique_stitches.discard("")
     for stitch in unique_stitches:
         data[stitch] = data['Stitches'].str.contains(stitch).astype(int)
-
     # Update the model structure with stitch relationships
     model_structure = define_bayesian_network_structure()
-    model_structure += [(stitch, 'Category') for stitch in unique_stitches]
+    #model_structure += [(stitch, 'Category') for stitch in unique_stitches]
     model_structure += [(stitch, 'Skill Level') for stitch in unique_stitches]
 
     return data, model_structure
 
+import networkx as nx
+import matplotlib.pyplot as plt
+def plot_bayesian_network(model_structure):
+    G = nx.DiGraph(model_structure)
+    pos = nx.spring_layout(G, seed=42)  # positions for all nodes
+
+    # nodes
+    nx.draw_networkx_nodes(G, pos, node_size=2000, node_color='skyblue')
+
+    # edges
+    nx.draw_networkx_edges(G, pos, edgelist=G.edges(), width=2, alpha=0.5, edge_color='gray')
+
+    # labels
+    nx.draw_networkx_labels(G, pos, font_size=20, font_family="sans-serif", font_weight='bold')
+
+    plt.title("Bayesian Network", fontsize=24)
+    plt.axis('off')
+    plt.tight_layout()
+    plt.show()
 
 def build_and_learn_bayesian_model(data, model_structure):
     # Initialize Bayesian Model
-    model = BayesianModel(model_structure)
-
+    model = BayesianNetwork(model_structure)
+    print(model_structure)
+    #plot_bayesian_network(model_structure) #TODO: Clean Up
     # Fit the model using an appropriate estimator
-    model.fit(data, estimator=EM)
+    model.fit(data, estimator=MaximumLikelihoodEstimator) #Maybe MLE
 
     return model
 
@@ -199,6 +279,26 @@ def compare_inference_methods(data, test_data, bayesian_model, target_variable, 
 
     return manual_accuracy, bayesian_accuracy
 
+def get_user_preferences():
+    # Collect user preferences for yarn weight, hook size, skill level, etc.
+    yarn_weight = input("Enter yarn weight preference: ")
+    hook_size = input("Enter hook size preference: ")
+    skill_level = input("Enter skill level preference: ")
+    # Collect other preferences...
+
+    return {
+        'Yarn Weight': yarn_weight,
+        'Hook Size': hook_size,
+        'Skill Level': skill_level
+        # Add other preferences...
+    }
+
+def suggest_patterns_based_on_preferences(bayesian_model, user_preferences):
+    # Perform inference in the Bayesian Network to suggest patterns based on user preferences
+    suggested_patterns = perform_inference(bayesian_model, 'Pattern Title', user_preferences)
+    return suggested_patterns
+
+
 def main():
     # Load and preprocess the data
     filename = "crochet_patterns.csv"
@@ -218,16 +318,31 @@ def main():
     print("Probabilities for Hook Size given Yarn Weight 2 (medium):", hook_size_results)
 
     # Perform decision-making based on user preferences
-    user_preferences = {'Yarn Weight': 2, 'Skill Level': 1}  # Example preferences
-    recommended_stitches = make_decision(bayesian_model, user_preferences)
-    print("Recommended Stitches:", recommended_stitches)
+    #user_preferences = {'Yarn Weight': 2, 'Skill Level': 1}  # Example preferences
+    #recommended_stitches = make_decision(bayesian_model, user_preferences)
+    #print("Recommended Stitches:", recommended_stitches)
 
     # Compare inference methods
     # Assume you have a separate test dataset or split from the original data
-    test_data = data.sample(frac=0.1)  # Using 10% of data as test data
-    evidence_variables = ['Yarn Weight', 'Skill Level']
-    target_variable = 'Hook Size'
-    compare_inference_methods(data, test_data, bayesian_model, target_variable, evidence_variables)
+    #test_data = data.sample(frac=0.1)  # Using 10% of data as test data
+    #evidence_variables = ['Yarn Weight', 'Skill Level']
+    #target_variable = 'Hook Size'
+    #compare_inference_methods(data, test_data, bayesian_model, target_variable, evidence_variables)
+    while True:
+        # Get user preferences
+        user_preferences = get_user_preferences()
 
+        # Suggest patterns based on user preferences
+        suggested_patterns = suggest_patterns_based_on_preferences(bayesian_model, user_preferences)
+
+        # Display suggested patterns to the user
+        print("Suggested Patterns:")
+        for pattern in suggested_patterns:
+            print(pattern)
+
+        # Ask if the user wants to continue or exit
+        choice = input("Do you want to continue? (yes/no): ")
+        if choice.lower() != 'yes':
+            break
 if __name__ == "__main__":
     main()

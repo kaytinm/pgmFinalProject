@@ -25,7 +25,7 @@ class CrochetHelperApp:
         master.geometry("400x200")
 
         # Load data and build model
-        self.data = self.pattern_csv_to_df("crochet_patterns.csv")  # Adjust path as needed
+        self.data = self.pattern_csv_to_df("venv/crochet_patterns.csv")  # Adjust path as needed
         self.data['Category'] = self.data.apply(self.update_category, axis=1)
         self.model = self.build_bayesian_model(self.data)
 
