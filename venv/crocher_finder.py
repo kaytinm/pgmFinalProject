@@ -158,8 +158,9 @@ def build_and_learn_bayesian_model(data, model_structure):
     print(model_structure)
     #plot_bayesian_network(model_structure) #TODO: Clean Up
     # Fit the model using an appropriate estimator
-    model.fit(data, estimator=MaximumLikelihoodEstimator) #Maybe MLE
-    save_model(model, 'Bayseian_Model_Crochet_Patterns1.pkl')
+    #model.fit(data, estimator=MaximumLikelihoodEstimator) #Maybe try EM
+    #save_model(model, 'Bayseian_Model_Crochet_Patterns1.pkl')
+    model = load_model('Bayseian_Model_Crochet_Patterns1.pkl')
     return model
 
 from pgmpy.inference import VariableElimination
@@ -289,26 +290,57 @@ def compare_inference_methods(data, test_data, bayesian_model, target_variable, 
     print("Bayesian Network Inference Accuracy:", bayesian_accuracy)
 
     return manual_accuracy, bayesian_accuracy
+import pandas as pd
+from pgmpy.inference import VariableElimination
 
-def get_user_preferences():
-    # Collect user preferences for yarn weight, hook size, skill level, etc.
-    yarn_weight = input("Enter yarn weight preference: ")
-    hook_size = input("Enter hook size preference: ")
-    skill_level = input("Enter skill level preference: ")
-    # Collect other preferences...
+def get_user_input(all_stitches):
+    print("Please enter your preferences (leave blank if no preference):")
+    yarn_weight = input("Yarn Weight (e.g., 1, 2, 3...): ").strip() or None
+    hook_size = input("Hook Size (in mm, e.g., 2.5, 3.0...): ").strip() or None
 
-    return {
-        'Yarn Weight': yarn_weight,
-        'Hook Size': hook_size,
-        'Skill Level': skill_level
-        # Add other preferences...
-    }
+    # Collect stitches as multiple inputs
+    stitch_inputs = input(f"Stitches (select from {', '.join(all_stitches)}): ").strip().split(',')
+    category = input("Category (e.g. Clothing, Blanket, Headwear, Scarf, ...): ").strip() or None
+    skill_level = input("Yarn Weight (1, 2, 3): ").strip() or None
+    yarn_name = input("Yarn Name (e.g. Blanket Yarn): ").strip() or None
 
-def suggest_patterns_based_on_preferences(bayesian_model, user_preferences):
-    # Perform inference in the Bayesian Network to suggest patterns based on user preferences
-    suggested_patterns = perform_inference(bayesian_model, 'Pattern Title', user_preferences)
-    return suggested_patterns
+    stitches = {stitch.strip(): 1 for stitch in stitch_inputs if stitch.strip() in all_stitches}
+    return yarn_weight, hook_size, stitches, category, skill_level, yarn_name
 
+def infer_preferences(model, yarn_weight=None, hook_size=None, stitches={}, category=None, skill_level=None, yarn_name=None):
+    inference = VariableElimination(model)
+    evidence = {}
+    if yarn_weight:
+        evidence['Yarn Weight'] = int(yarn_weight)
+    if hook_size:
+        evidence['Hook Size'] = float(hook_size)
+    if skill_level:
+        evidence['Skill Level'] = int(skill_level)
+    evidence.update(stitches)
+    if category:
+        evidence.update(category)
+    if yarn_name:
+        evidence.update(yarn_name)
+    # Define all possible query attributes
+    all_attributes = ['Yarn Weight', 'Hook Size', 'Skill Level', 'Yarn Name', 'Category'] + list(stitches.keys())
+    queries = {}
+
+    # Determine which attributes need to be inferred
+    for attribute in all_attributes:
+        if attribute not in evidence:
+            if evidence:  # Only perform inference if there's at least some evidence
+                query_result = inference.query(variables=[attribute], evidence=evidence, show_progress=False)
+                most_likely_state = query_result.state_names[attribute][np.argmax(query_result.values)]
+                queries[attribute] = most_likely_state
+
+    return queries
+
+
+def find_matching_patterns(df, preferences):
+    # Filter the DataFrame based on the provided preferences
+    query = " and ".join(f"`{key}` == {val!r}" if isinstance(val, str) else f"`{key}` == {val}" for key, val in preferences.items() if val is not None)
+
+    return df.query(query) if query else df
 
 def main():
     # Load and preprocess the data
@@ -339,21 +371,19 @@ def main():
     #evidence_variables = ['Yarn Weight', 'Skill Level']
     #target_variable = 'Hook Size'
     #compare_inference_methods(data, test_data, bayesian_model, target_variable, evidence_variables)
-    while True:
-        # Get user preferences
-        user_preferences = get_user_preferences()
 
-        # Suggest patterns based on user preferences
-        suggested_patterns = suggest_patterns_based_on_preferences(bayesian_model, user_preferences)
+    all_stitches = [col for col in data.columns if "Stitch" in col]  # Adjust based on actual column names
+    yarn_weight, hook_size, stitches, category, skill_level, yarn_name = get_user_input(all_stitches)
+    inferred_preferences = infer_preferences(bayesian_model, yarn_weight, hook_size, stitches, category, skill_level, yarn_name)
 
-        # Display suggested patterns to the user
-        print("Suggested Patterns:")
-        for pattern in suggested_patterns:
-            print(pattern)
+    # Combine user input and inferred preferences
+    combined_preferences = {**inferred_preferences, **{'Yarn Weight': yarn_weight, 'Hook Size': hook_size, 'Category':category, 'Skill Level':skill_level, 'Yarn Name':yarn_name}, **stitches}
+    combined_preferences.update(inferred_preferences)
+    clean_preferences = {k: v for k, v in combined_preferences.items() if v is not None}
 
-        # Ask if the user wants to continue or exit
-        choice = input("Do you want to continue? (yes/no): ")
-        if choice.lower() != 'yes':
-            break
+    # Find matching patterns
+    matching_patterns = find_matching_patterns(data, clean_preferences)
+    print("Matching Patterns Found:")
+    print(matching_patterns)
 if __name__ == "__main__":
     main()

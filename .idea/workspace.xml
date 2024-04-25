@@ -4,10 +4,8 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="4caf94f7-73f5-4908-ab58-5387643bb1cc" name="Changes" comment="webscrape easycrochet for patterns to .csv file">
-      <change beforePath="$PROJECT_DIR$/crochet_patterns.csv" beforeDir="false" afterPath="$PROJECT_DIR$/venv/crochet_patterns.csv" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scrape_crochet_patterns.py" beforeDir="false" afterPath="$PROJECT_DIR$/scrape_crochet_patterns.py" afterDir="false" />
+    <list default="true" id="4caf94f7-73f5-4908-ab58-5387643bb1cc" name="Changes" comment="crochet model kind of working">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/venv/crocher_finder.py" beforeDir="false" afterPath="$PROJECT_DIR$/venv/crocher_finder.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -102,7 +100,21 @@
       <option name="project" value="LOCAL" />
       <updated>1709504149672</updated>
     </task>
-    <option name="localTasksCounter" value="2" />
+    <task id="LOCAL-00002" summary="crochet model kind of working">
+      <created>1713979906134</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1713979906135</updated>
+    </task>
+    <task id="LOCAL-00003" summary="crochet model kind of working">
+      <created>1713980465182</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1713980465182</updated>
+    </task>
+    <option name="localTasksCounter" value="4" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -119,7 +131,8 @@
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="webscrape easycrochet for patterns to .csv file" />
-    <option name="LAST_COMMIT_MESSAGE" value="webscrape easycrochet for patterns to .csv file" />
+    <MESSAGE value="crochet model kind of working" />
+    <option name="LAST_COMMIT_MESSAGE" value="crochet model kind of working" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -131,13 +144,13 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/venv/crocher_finder.py</url>
-          <line>149</line>
-          <option name="timeStamp" value="26" />
+          <line>378</line>
+          <option name="timeStamp" value="33" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/venv/crocher_finder.py</url>
-          <line>151</line>
-          <option name="timeStamp" value="27" />
+          <line>341</line>
+          <option name="timeStamp" value="36" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>
