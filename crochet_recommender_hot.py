@@ -1,20 +1,12 @@
-import csv
-import re
-import requests
-from bs4 import BeautifulSoup
-from pgmpy.models import BayesianNetwork
-from pgmpy.estimators import MaximumLikelihoodEstimator
 from pgmpy.estimators import ExpectationMaximization as EM
-from pgmpy.inference import VariableElimination
-from pgmpy.inference import BeliefPropagation
-from pgmpy.estimators import MaximumLikelihoodEstimator, ExpectationMaximization as EM
 import numpy as np
-import heapq
-import pandas as pd
-import pickle
 from pgmpy.inference import VariableElimination
 from sklearn.model_selection import train_test_split
-import joblib   # Depending on your sklearn version, joblib might be included in sklearn
+import re
+import pandas as pd
+from pgmpy.models import BayesianNetwork
+import networkx as nx
+import matplotlib.pyplot as plt
 
 def update_category(row):
     title_lower = row['Title'].lower()
@@ -38,10 +30,6 @@ def update_category(row):
         return 'Amigurumi'
     else:
         return 'Stitch/Granny Square'
-
-
-import pandas as pd
-
 
 def preprocess_stitches(df):
     keywords = [
@@ -104,7 +92,6 @@ def hot_one_encode_stitches(data):
     return data
 
 def extract_number(text):
-    import re  # Regular expression module
     # Search for numbers in the string
     match = re.search(r'\d+', text)
     if match:
@@ -114,7 +101,6 @@ def extract_number(text):
 
 #TODO: Shouldn't actually be extracting mean size change later
 def extract_mean_size(text):
-    import re
     # Find all numbers (integers or decimals) before "mm"
     numbers = re.findall(r'\b\d+\.?\d*(?=\s*mm)', text)
     # Convert all found numbers to float and calculate mean if multiple values are found
@@ -131,10 +117,6 @@ def check_multiple_colors(color):
     elif',' in color:
         return 'Multi'
     return color
-
-
-import pandas as pd
-
 
 def preprocess_stitches_for_bayesian_network(data):
     preprocess_stitches_df = data.copy()
@@ -176,7 +158,6 @@ def pattern_csv_to_df(filename):
     return df, unique_stitches
 
 
-from pgmpy.models import BayesianNetwork
 
 
 def define_bayesian_network_structure():
@@ -204,8 +185,7 @@ def define_bayesian_network_structure():
     model_structure += [('Category', stitch) for stitch in unique_stitches]
     return model_structure
 
-import networkx as nx
-import matplotlib.pyplot as plt
+
 def plot_bayesian_network(model_structure):
     G = nx.DiGraph(model_structure)
     pos = nx.spring_layout(G, seed=42)  # positions for all nodes
