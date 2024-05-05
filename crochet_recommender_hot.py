@@ -355,7 +355,8 @@ attributes = recommendation_attributes.copy()
 recommendation_attributes.extend(unique_stitches)
 # Build and learn the Bayesian model
 model_structure = define_bayesian_network_structure()
-bayesian_model, mappings = build_and_learn_bayesian_model(data[recommendation_attributes], model_structure)
+recommendation_data = data[recommendation_attributes]
+bayesian_model, mappings = build_and_learn_bayesian_model(recommendation_data, model_structure)
 inference_engine = VariableElimination(bayesian_model)
 
 # Define attributes for recommendation
