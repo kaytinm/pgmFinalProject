@@ -400,7 +400,7 @@ def get_top_recommendations(result, top_n=1):
         name_mapping = no_to_name[variable_name]
         names = [name_mapping[index] for index in indices]
         top_values_names[variable_name] = names
-        top_values_and_probs[variable_name] = {"Values": names, "Probabilities": values[indices]}
+        top_values_and_probs[variable_name] = {"Values": names}
 
     return top_values_names, top_probs
 
