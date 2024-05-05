@@ -254,12 +254,13 @@ def build_and_learn_bayesian_model(data, model_structure, load=False, doplot=Fal
     encoded_data = data.copy()
     encoded_data, mappings = encode_data(data)
     if load:
-        model = load_model('Bayseian_Model_Crochet_PatternsNoHot2EM.pkl')
+        model = load_model('Bayseian_Model_Crochet_PatternsHotEM.pkl')
         if doplot:
             plot_bayesian_network(model_structure)
         return model, mappings
     else:
         model = BayesianNetwork(model_structure)
+        save_model(model, 'Bayseian_Model_Crochet_PatternsHotEM.pkl')
         model.fit(encoded_data, estimator=EM)
         if doplot:
             plot_bayesian_network(model_structure)
@@ -577,7 +578,7 @@ def main():
     model_structure = define_bayesian_network_structure()
     #plot_bayesian_network(model_structure)
     # Build and learn the Bayesian model
-    bayesian_model, mappings = build_and_learn_bayesian_model(data[recommendation_attributes], model_structure)
+    bayesian_model, mappings = build_and_learn_bayesian_model(recommendation_data, model_structure)
     inference_engine = VariableElimination(bayesian_model)
     # Define attributes for recommendation
 
