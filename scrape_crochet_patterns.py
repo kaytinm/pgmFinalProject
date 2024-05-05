@@ -6,6 +6,7 @@
 import csv
 import re
 import requests
+import BeautifulSoup
 
 
 
@@ -117,7 +118,7 @@ def scrape_and_store_patterns_easycrochet():
     patterns.update(patterns_holiday)
 
     # Define your CSV file name
-    csv_file = "crochet_patterns.csv"
+    csv_file = "venv/crochet_patterns.csv"
 
     # Open the file in write mode
     with open(csv_file, mode='w', newline='', encoding='utf-8') as file:

@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Results</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    <style>
+        body {
+            background-color: #FFE5D9; /* Light peach background */
+            color: #424242; /* Dark grey text */
+        }
+        .container {
+            background-color: #FFF9E1; /* Light yellow container */
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Subtle shadow effect */
+            margin-top: 20px;
+        }
+        h1 {
+            color: #424242; /* Dark grey heading */
+        }
+        .btn-primary {
+            background-color: #FFE066; /* Darker yellow primary button */
+            border-color: #FFE066;
+            color: #424242; /* Dark grey text */
+        }
+        .btn-primary:hover {
+            background-color: #FFCC00; /* Dark yellow peach on hover */
+            border-color: #FFCC00;
+        }
+        table {
+            width: 100%;
+            background-color: #FFF0E8; /* White background for the table */
+        }
+        th, td {
+            padding: 8px; /* Padding around text in cells */
+            text-align: left; /* Align text to the left in cells */
+            border-bottom: 1px solid #DFD4C2; /* Light grey border below each row */
+        }
+        th {
+            background-color: #FFB6A5; /* Light grey background for header */
+            color: #333; /* Darker text for better contrast */
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Recommended Patterns for: {{ input_data }}</h1>
+
+        {% if results %}
+        <table class="table table-hover">
+            {{ results | safe }}
+        </table>
+        {% else %}
+        <div class="alert alert-warning" role="alert">
+            No results found for the provided input.
+        </div>
+        {% endif %}
+
+        <a href="/" class="btn btn-primary">Back to Home</a>
+    </div>
+</body>
+</html>

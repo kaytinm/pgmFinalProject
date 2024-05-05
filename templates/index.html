@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Input Form</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    <style>
+        body {
+            background-color: #FFE5D9 ; /* Light peach background */
+            color: #424242; /* Dark grey text */
+        }
+        .container {
+            background-color: #FFF9E1; /* Light yellow container */
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Subtle shadow effect */
+        }
+        h1 {
+            color: #424242; /* Dark grey heading */
+        }
+        label {
+            color: #424242; /* Dark grey labels */
+        }
+        .form-control {
+            background-color: #FFF0E8; /* Light pink input fields */
+            border: 1px solid #FFD4C2; /* pinkish border */
+        }
+        .btn-primary {
+            background-color: #FFE066; /* Darker yellow primary button */
+            border-color: #FFE066;
+            color: #424242; /* Dark grey text */
+        }
+        .btn-primary:hover {
+            background-color: #FFCC00; /* Dark yellow peach on hover */
+            border-color: #FFCC00;
+        }
+        .btn-secondary {
+            background-color: #FFB6A5; /* Pink secondary button */
+            border-color: #FFB6A5; /* Pink border for secondary button */
+            color: #424242; /* Dark grey text */
+        }
+        .btn-secondary:hover {
+            background-color: #FF8373; /* Darker Pink on hover */
+            border-color: #FF8373;
+        }
+         #loading {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.7);
+            z-index: 9999;
+        }
+
+        #loading-spinner {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+    </style>
+</head>
+<body>
+    <div id="loading">
+        <div id="loading-spinner">Loading...</div>
+    </div>
+    <div class="container mt-5">
+        <h1>Enter Pattern Details</h1>
+        <form action="/submit" method="post">
+            <div class="form-group">
+                <label>Skill Level:</label>
+                <input type="text" name="Skill Level" class="form-control">
+                <label>Yarn Weight:</label>
+                <input type="text" name="Yarn Weight" class="form-control">
+                <label>Hook Size:</label>
+                <input type="text" name="Hook Size" class="form-control">
+                <label>Category:</label>
+                <input type="text" name="Category" class="form-control">
+                <label>Stitches (comma-separated):</label>
+                <input type="text" name="Stitches" class="form-control">
+            </div>
+            <button type="submit" name="action" id = recommend-pattern value="Recommend Pattern" class="btn btn-primary">Recommend a Pattern</button>
+            <button type="submit" name="action" value="Recommend Attribute" class="btn btn-secondary">Recommend an Attribute</button>
+        </form>
+    </div>
+
+     <script>
+            document.getElementById('recommend-pattern').addEventListener('click', function() {
+                showLoading();
+                // Here you can add code to fetch the pattern or do any other asynchronous operation
+                // For demonstration purpose, I'm using setTimeout to simulate an asynchronous operation
+
+            });
+
+            function showLoading() {
+                document.getElementById('loading').style.display = 'block';
+            }
+
+            function hideLoading() {
+                document.getElementById('loading').style.display = 'none';
+            }
+        </script>
+</body>
+
+</html>
