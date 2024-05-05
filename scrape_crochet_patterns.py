@@ -6,6 +6,7 @@
 import csv
 import re
 import requests
+import BeautifulSoup
 
 
 

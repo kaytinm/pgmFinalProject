@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attribute Recommendation Result</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    <style>
+        body {
+            background-color: #FFE5D9 ; /* Light peach background */
+            color: #424242; /* Dark grey text */
+        }
+        .container {
+            background-color: #FFF9E1; /* Light yellow container */
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Subtle shadow effect */
+            margin-top: 50px; /* Adjusted margin to match the second HTML document */
+        }
+        h1 {
+            color: #424242; /* Dark grey heading */
+        }
+        .alert-success {
+            background-color: #D4EDDA; /* Light green alert */
+            border-color: #C3E6CB; /* Green border for success alert */
+            color: #155724; /* Dark green text for success alert */
+        }
+        .alert-warning {
+            background-color: #FFF3CD; /* Light yellow alert */
+            border-color: #FFEEBA; /* Yellow border for warning alert */
+            color: #856404; /* Dark yellow text for warning alert */
+        }
+        .btn-primary {
+            background-color: #FFE066; /* Darker yellow primary button */
+            border-color: #FFE066;
+            color: #424242; /* Dark grey text */
+        }
+        .btn-primary:hover {
+            background-color: #FFCC00; /* Dark yellow peach on hover */
+            border-color: #FFCC00;
+        }
+        .btn-secondary {
+            background-color: #FFB6A5; /* Pink secondary button */
+            border-color: #FFB6A5; /* Pink border for secondary button */
+            color: #424242; /* Dark grey text */
+        }
+        .btn-secondary:hover {
+            background-color: #FF8373; /* Darker Pink on hover */
+            border-color: #FF8373;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Recommendation Result for "{{ attribute_name }}"</h1>
+        {% if recommendation %}
+            <div class="alert alert-success" role="alert">
+                <h4 class="alert-heading">Recommended Value:</h4>
+                <p>{{ recommendation }}</p>
+                <hr>
+            </div>
+        {% else %}
+            <div class="alert alert-warning" role="alert">
+                No recommendation could be found for "{{ attribute_name }}". Please check your inputs or try a different attribute.
+            </div>
+        {% endif %}
+        <a href="/" class="btn btn-primary">Back to Home</a>
+        <a href="/recommend_attribute" class="btn btn-secondary">Try Another Attribute</a>
+    </div>
+</body>
+</html>

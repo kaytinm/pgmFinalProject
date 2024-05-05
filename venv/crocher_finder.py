@@ -75,6 +75,7 @@ def preprocess_stitch_names(stitch_column):
     # The Type of stitch isn't what is notable in this case it is if you are doing an increase or decrease.
     stitch_column = stitch_column.str.split('(Two Together|Increase)').str[-1].str.strip()
     return stitch_column
+
 def pattern_csv_to_df(filename):
     # Read CSV into DataFrame
     df = pd.read_csv(filename)
@@ -160,7 +161,7 @@ def build_and_learn_bayesian_model(data, model_structure):
     # Fit the model using an appropriate estimator
     #model.fit(data, estimator=MaximumLikelihoodEstimator) #Maybe try EM
     #save_model(model, 'Bayseian_Model_Crochet_Patterns1.pkl')
-    model = load_model('Bayseian_Model_Crochet_Patterns1.pkl')
+    model = load_model('../Bayseian_Model_Crochet_Patterns1.pkl')
     return model
 
 from pgmpy.inference import VariableElimination
@@ -307,6 +308,90 @@ def get_user_input(all_stitches):
     stitches = {stitch.strip(): 1 for stitch in stitch_inputs if stitch.strip() in all_stitches}
     return yarn_weight, hook_size, stitches, category, skill_level, yarn_name
 
+def infer_preferences_with_probabilities(model, **user_inputs):
+    inference = VariableElimination(model)
+    inferred_results = {}
+    evidence = {key: value for key, value in user_inputs.items() if value is not None}
+
+    # Define all possible query attributes in the model
+    all_attributes = ['Yarn Weight', 'Hook Size', 'Skill Level', 'Stitches', 'Yarn Name', 'Category']
+
+    for attribute in all_attributes:
+        if attribute not in evidence:
+            if evidence:
+                query_result = inference.query(variables=[attribute], evidence=evidence, show_progress=False)
+                # Store the full probability distribution
+                inferred_results[attribute] = query_result
+    return inferred_results
+
+def find_matching_patterns(df, preferences, inferred_results):
+    # Calculate scores for each pattern
+    df = calculate_pattern_scores(df, inferred_results)
+
+    # Filter the DataFrame based on the provided user preferences
+    query_conditions = [f"`{key}` == {val!r}" if isinstance(val, str) else f"`{key}` == {val}" for key, val in preferences.items() if val is not None and key in df.columns]
+    if query_conditions:
+        filtered_df = df.query(" and ".join(query_conditions))
+    else:
+        filtered_df = df
+
+    # Sort the patterns by scores in descending order
+    sorted_patterns = filtered_df.sort_values(by='score', ascending=False)
+    return sorted_patterns
+
+
+def calculate_pattern_scores(df, inferred_results):
+    # Initialize a score column in the DataFrame
+    df['score'] = 0
+
+    for attribute, distribution in inferred_results.items():
+        # Extract the most probable value for simplicity in this example
+        most_likely_value = distribution.state_names[attribute][np.argmax(distribution.values)]
+        max_prob = max(distribution.values)
+
+        # Increase scores based on the match probability
+        df['score'] += df[attribute].apply(lambda x: max_prob if x == most_likely_value else 0)
+
+    return df
+
+import pandas as pd
+import numpy as np
+import pymc3 as pm
+import arviz as az
+
+def hierarchal_baysean_model(df):
+    with pm.Model() as model:
+        # Priors for overall means
+        yarn_name_idx = pm.Normal('yarn_name_idx', mu=0, sigma=1, shape=len(df['Yarn Name'].unique()))
+        yarn_weight_idx = pm.Normal('yarn_weight_idx', mu=0, sigma=1, shape=len(df['Yarn Weight'].unique()))
+        hook_size_effect = pm.Normal('hook_size_effect', mu=0, sigma=1)
+        category_idx = pm.Normal('category_idx', mu=0, sigma=1, shape=len(df['Category'].unique()))
+        skill_level_effect = pm.Normal('skill_level_effect', mu=0, sigma=1)
+
+        # Expected number of stitches
+        stitches_mu = pm.Deterministic(
+            'stitches_mu',
+            yarn_name_idx[df['Yarn Name']] +
+            yarn_weight_idx[df['Yarn Weight']] +
+            hook_size_effect * df['Hook Size'] +
+            category_idx[df['Category']] +
+            skill_level_effect * df['Skill Level']
+        )
+
+        # Likelihood
+        stitches = pm.Poisson('stitches', mu=np.exp(stitches_mu), observed=df['Stitches'])
+
+        # Sampling
+        trace = pm.sample(500, return_inferencedata=False)
+
+    # Model diagnostics
+    az.plot_trace(trace)
+    plt.show()
+    # Posterior summaries
+    summary = az.summary(trace)
+    print(summary)
+
+
 def infer_preferences(model, yarn_weight=None, hook_size=None, stitches={}, category=None, skill_level=None, yarn_name=None):
     inference = VariableElimination(model)
     evidence = {}
@@ -342,6 +427,20 @@ def find_matching_patterns(df, preferences):
 
     return df.query(query) if query else df
 
+def apply_belief_propagation(model):
+    # Initialize Belief Propagation
+    belief_propagation = BeliefPropagation(model)
+
+    return belief_propagation
+
+def perform_inference_with_bp(bp_engine, query_variables, evidence=None):
+    if evidence:
+        result = bp_engine.query(variables=query_variables, evidence=evidence)
+    else:
+        result = bp_engine.query(variables=query_variables)
+
+    return result
+
 def main():
     # Load and preprocess the data
     filename = "crochet_patterns.csv"
@@ -353,7 +452,9 @@ def main():
 
     # Build and learn the Bayesian model
     bayesian_model = build_and_learn_bayesian_model(data, model_structure)
+    bp_engine = apply_belief_propagation(bayesian_model)
 
+    #hierarchal_baysean_model(data)
     # Perform various inferences
     # Example: Query hook size for a given yarn weight
     yarn_weight_example = 2  # Assume 2 corresponds to 'medium'
@@ -373,17 +474,26 @@ def main():
     #compare_inference_methods(data, test_data, bayesian_model, target_variable, evidence_variables)
 
     all_stitches = [col for col in data.columns if "Stitch" in col]  # Adjust based on actual column names
+
     yarn_weight, hook_size, stitches, category, skill_level, yarn_name = get_user_input(all_stitches)
     inferred_preferences = infer_preferences(bayesian_model, yarn_weight, hook_size, stitches, category, skill_level, yarn_name)
-
+    #inferred_results = infer_preferences_with_probabilities(bayesian_model,yarn_weight, hook_size, stitches, category, skill_level, yarn_name)
     # Combine user input and inferred preferences
     combined_preferences = {**inferred_preferences, **{'Yarn Weight': yarn_weight, 'Hook Size': hook_size, 'Category':category, 'Skill Level':skill_level, 'Yarn Name':yarn_name}, **stitches}
     combined_preferences.update(inferred_preferences)
+
     clean_preferences = {k: v for k, v in combined_preferences.items() if v is not None}
+    inferred_preferences = perform_inference_with_bp(bp_engine, clean_preferences.keys(), clean_preferences.values())
+    matching_patterns = find_matching_patterns(data, inferred_preferences)
+
+    # Find matching patterns and sort by scores
+    #matching_patterns = find_matching_patterns(data, combined_preferences, inferred_results)
+    print("Top Matching Patterns:")
+    print(matching_patterns.head())
 
     # Find matching patterns
     matching_patterns = find_matching_patterns(data, clean_preferences)
-    print("Matching Patterns Found:")
-    print(matching_patterns)
+    #print("Matching Patterns Found:")
+    #print(matching_patterns)
 if __name__ == "__main__":
     main()
