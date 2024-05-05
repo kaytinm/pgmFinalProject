@@ -4,8 +4,8 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="4caf94f7-73f5-4908-ab58-5387643bb1cc" name="Changes" comment="update crochet recommender">
-      <change beforePath="$PROJECT_DIR$/crochet_recommender_hot.py" beforeDir="false" afterPath="$PROJECT_DIR$/crochet_recommender_hot.py" afterDir="false" />
+    <list default="true" id="4caf94f7-73f5-4908-ab58-5387643bb1cc" name="Changes" comment="update main">
+      <change afterPath="$PROJECT_DIR$/requirements.txt" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -248,7 +248,14 @@
       <option name="project" value="LOCAL" />
       <updated>1714944544440</updated>
     </task>
-    <option name="localTasksCounter" value="9" />
+    <task id="LOCAL-00009" summary="update main">
+      <created>1714945610401</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1714945610401</updated>
+    </task>
+    <option name="localTasksCounter" value="10" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -268,16 +275,12 @@
     <MESSAGE value="crochet model kind of working" />
     <MESSAGE value="fix query" />
     <MESSAGE value="update crochet recommender" />
-    <option name="LAST_COMMIT_MESSAGE" value="update crochet recommender" />
+    <MESSAGE value="update main" />
+    <option name="LAST_COMMIT_MESSAGE" value="update main" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
       <breakpoints>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/main.py</url>
-          <line>103</line>
-          <option name="timeStamp" value="14" />
-        </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/ap.py</url>
           <line>44</line>
