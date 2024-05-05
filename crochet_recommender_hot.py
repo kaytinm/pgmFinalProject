@@ -145,7 +145,7 @@ def preprocess_stitches_for_bayesian_network(data):
         stitches_data = dfrow['Cleaned_Stitches']
         stitches = stitches_data.split(',')
         for unique_stitch in unique_stitches:
-            preprocess_stitches_df.loc[index, unique_stitch] = 1 if unique_stitch in stitches else 0
+            preprocess_stitches_df.loc[index, unique_stitch] = int(1) if unique_stitch in stitches else int(0)
     return preprocess_stitches_df, unique_stitches
 
 
@@ -394,11 +394,13 @@ def get_top_recommendations(result, top_n=1):
     no_to_name = result.no_to_name
     # Convert indices to meaningful names using no_to_name
     top_values_names = {}
+    top_values_and_probs = {}
     for dim_index, indices in enumerate(top_values_indices):
         variable_name = result.variables[dim_index]
         name_mapping = no_to_name[variable_name]
         names = [name_mapping[index] for index in indices]
         top_values_names[variable_name] = names
+        top_values_and_probs[variable_name] = {"Values": names, "Probabilities": values[indices]}
 
     return top_values_names, top_probs
 
@@ -452,6 +454,7 @@ def recommend_patterns_from_bayes(input_data):
                 non_input_attributes.append(attr)
         # Query the model
         result = inference_engine.query(variables=non_input_attributes, evidence=input_data)
+        result_map = inference_engine.map_query(variables=non_input_attributes, evidence=input_data)
         top_values, top_probs = get_top_recommendations(result, top_n=top_n)
         new_values = top_values.copy()
         # Handle Encoding
