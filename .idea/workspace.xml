@@ -4,24 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="4caf94f7-73f5-4908-ab58-5387643bb1cc" name="Changes" comment="fix query">
-      <change afterPath="$PROJECT_DIR$/Bayseian_Model_Crochet_PatternsNoHot.pkl" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ap.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/crochet_patterns.csv" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/crochet_reccomender.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/crochet_recommender_hot.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/crochet_recommender_no_hot.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/templates/attribute_result.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/templates/index.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/templates/results.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/templates/select_attribute.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/venv/Bayseian_Model_Crochet_Patterns12.pkl" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/venv/Bayseian_Model_Crochet_PatternsNoHot2.pkl" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scrape_crochet_patterns.py" beforeDir="false" afterPath="$PROJECT_DIR$/scrape_crochet_patterns.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/venv/crocher_finder.py" beforeDir="false" afterPath="$PROJECT_DIR$/venv/crocher_finder.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/venv/crochet_patterns.csv" beforeDir="false" afterPath="$PROJECT_DIR$/venv/crochet_patterns.csv" afterDir="false" />
-    </list>
+    <list default="true" id="4caf94f7-73f5-4908-ab58-5387643bb1cc" name="Changes" comment="update crochet recommender" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -235,7 +218,14 @@
       <option name="project" value="LOCAL" />
       <updated>1714059608109</updated>
     </task>
-    <option name="localTasksCounter" value="5" />
+    <task id="LOCAL-00005" summary="update crochet recommender">
+      <created>1714943917574</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1714943917574</updated>
+    </task>
+    <option name="localTasksCounter" value="6" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -254,7 +244,8 @@
     <MESSAGE value="webscrape easycrochet for patterns to .csv file" />
     <MESSAGE value="crochet model kind of working" />
     <MESSAGE value="fix query" />
-    <option name="LAST_COMMIT_MESSAGE" value="fix query" />
+    <MESSAGE value="update crochet recommender" />
+    <option name="LAST_COMMIT_MESSAGE" value="update crochet recommender" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
