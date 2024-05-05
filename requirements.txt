@@ -6,5 +6,3 @@ pgmpy
 numpy
 pandas
 scikit-learn
-sklearn-crfsuite
-gunicorn

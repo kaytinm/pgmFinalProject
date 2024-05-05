@@ -13,7 +13,6 @@ import heapq
 import pandas as pd
 import pickle
 from pgmpy.inference import VariableElimination
-from sklearn_crfsuite import CRF
 from sklearn.model_selection import train_test_split
 import joblib   # Depending on your sklearn version, joblib might be included in sklearn
 
@@ -386,23 +385,22 @@ def process_input_data(form_data):
                 continue
     return input_data
 
+
 def get_top_recommendations(result, top_n=1):
     values = result.values
     flat_indices = np.argsort(values.flatten())[-top_n:][::-1]
     top_values_indices = np.unravel_index(flat_indices, values.shape)
-    top_probs = values[top_values_indices]
     no_to_name = result.no_to_name
     # Convert indices to meaningful names using no_to_name
-    top_values_names = {}
     top_values_and_probs = {}
     for dim_index, indices in enumerate(top_values_indices):
         variable_name = result.variables[dim_index]
         name_mapping = no_to_name[variable_name]
         names = [name_mapping[index] for index in indices]
-        top_values_names[variable_name] = names
-        top_values_and_probs[variable_name] = {"Values": names}
+        top_values_and_probs[variable_name] = {"Values": names, "Probabilities": values[indices]}
 
-    return top_values_names, top_probs
+    return top_values_and_probs
+
 
 def encode_user_input(attributes, user_inputs, mappings):
     """
