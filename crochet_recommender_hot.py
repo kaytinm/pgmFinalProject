@@ -145,7 +145,7 @@ def preprocess_stitches_for_bayesian_network(data):
         stitches_data = dfrow['Cleaned_Stitches']
         stitches = stitches_data.split(',')
         for unique_stitch in unique_stitches:
-            dfrow[unique_stitch] = 1 if unique_stitch in stitches else 0
+            preprocess_stitches_df.loc[index, unique_stitch] = 1 if unique_stitch in stitches else 0
     return preprocess_stitches_df, unique_stitches
 
 
@@ -171,8 +171,8 @@ def pattern_csv_to_df(filename):
     df['Hook Size'] = df['Hook Size'].apply(extract_mean_size)
     df['Category'] = df.apply(update_category, axis=1)
     # Color doesn't have an impact in this case and doesn't really effect the pattern since a different color yarn can be picked
-    df['Color'] = df['Color'].apply(check_multiple_colors).fillna('nan', inplace=True)
-    df, unique_stitches= preprocess_stitches_for_bayesian_network(df)
+    #df['Color'] = df['Color'].apply(check_multiple_colors).fillna('nan', inplace=True)
+    df, unique_stitches = preprocess_stitches_for_bayesian_network(df)
 
     return df, unique_stitches
 
@@ -249,7 +249,7 @@ def encode_data(data):
             encoded_data[column] = data[column]
     return encoded_data, mappings
 
-def build_and_learn_bayesian_model(data, model_structure, load=True, doplot=False):
+def build_and_learn_bayesian_model(data, model_structure, load=False, doplot=False):
     # Initialize Bayesian Model
     encoded_data = data.copy()
     encoded_data, mappings = encode_data(data)
