@@ -1,5 +1,5 @@
 from flask import Flask, render_template, request, redirect, url_for, session
-from flask import Session  # Assuming Flask-Session is installed and configured
+from flask_session import Session  # Assuming Flask-Session is installed and configured
 from crochet_recommender_hot import *
 
 app = Flask(__name__)
@@ -16,7 +16,12 @@ def index():
 @app.route('/submit', methods=['POST'])
 def submit():
     action = request.form['action']
-    form_data = {key: value for key, value in request.form.items() if key != 'action'}
+    form_data = {}
+    for key in request.form.keys():
+        if key != 'action':
+            # Retrieve list for checkboxes or single value otherwise
+            form_data[key] = request.form.getlist(key) if len(request.form.getlist(key)) > 1 else request.form[key]
+    print(form_data)
     input_data = process_input_data(form_data)
     session['input_data'] = input_data
     if action == 'Recommend Pattern':

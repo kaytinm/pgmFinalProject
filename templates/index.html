@@ -22,9 +22,9 @@
         label {
             color: #424242; /* Dark grey labels */
         }
-        .form-control {
+        .form-control, select, .custom-checkbox {
             background-color: #FFF0E8; /* Light pink input fields */
-            border: 1px solid #FFD4C2; /* pinkish border */
+            border: 1px solid #FFD4C2; /* Pinkish border */
         }
         .btn-primary {
             background-color: #FFE066; /* Darker yellow primary button */
@@ -66,26 +66,106 @@
     <div id="loading">
         <div id="loading-spinner">Loading...</div>
     </div>
-    <div class="container mt-5">
+   <div class="container mt-5">
         <h1>Enter Pattern Details</h1>
         <form action="/submit" method="post">
             <div class="form-group">
-                <label>Skill Level:</label>
-                <input type="text" name="Skill Level" class="form-control">
-                <label>Yarn Weight:</label>
-                <input type="text" name="Yarn Weight" class="form-control">
-                <label>Hook Size:</label>
-                <input type="text" name="Hook Size" class="form-control">
-                <label>Category:</label>
-                <input type="text" name="Category" class="form-control">
-                <label>Stitches (comma-separated):</label>
-                <input type="text" name="Stitches" class="form-control">
+                <label for="skillLevel">Skill Level:</label>
+                <select name="Skill Level" class="form-control" id="skillLevel">
+                    <option value="">Select Skill Level</option>
+                    <option value="1">Basic</option>
+                    <option value="2">Easy</option>
+                    <option value="3">Intermediate</option>
+                    <option value="4">Complex</option>
+                </select>
+
+                <label for="yarnWeight">Yarn Weight:</label>
+                <select name="Yarn Weight" class="form-control" id="yarnWeight">
+                    <option value="">Select Yarn Weight</option>
+                    <option value="0">0 Lace</option>
+                    <option value="1">1 Super Fine</option>
+                    <option value="2">2 Fine</option>
+                    <option value="3">3 Light</option>
+                    <option value="4">4 Medium</option>
+                    <option value="5">5 Bulky</option>
+                    <option value="6">6 Super Bulky</option>
+                    <option value="7">7 Jumbo</option>
+                </select>
+
+                <label for="Hook Size:">Hook Size:</label>
+                <select name="Hook Size" class="form-control" id="hookSize">
+                    <option value="">Select Hook Size</option>
+                   <option value="2">2 mm</option>
+                   <option value="2.25">2.25 mm</option>
+                   <option value="2.5">2.5 mm</option>
+                   <option value="2.75">2.75 mm</option>
+                   <option value="3">3 mm</option>
+                   <option value="3.25">3.25 mm</option>
+                   <option value="3.5">3.5 mm</option>
+                   <option value="3.58333333">3.58333333 mm</option>
+                   <option value="3.625">3.625 mm</option>
+                   <option value="3.75">3.75 mm</option>
+                   <option value="3.875">3.875 mm</option>
+                   <option value="4">4 mm</option>
+                   <option value="4.25">4.25 mm</option>
+                   <option value="4.375">4.375 mm</option>
+                   <option value="4.5">4.5 mm</option>
+                   <option value="4.75">4.75 mm</option>
+                   <option value="5">5 mm</option>
+                   <option value="5.25">5.25 mm</option>
+                   <option value="5.5">5.5 mm</option>
+                   <option value="5.75">5.75 mm</option>
+                   <option value="6">6 mm</option>
+                   <option value="6.25">6.25 mm</option>
+                   <option value="6.5">6.5 mm</option>
+                   <option value="7">7 mm</option>
+                   <option value="8">8 mm</option>
+                   <option value="9">9 mm</option>
+                   <option value="9.5">9.5 mm</option>
+                   <option value="10">10 mm</option>
+                   <option value="12">12 mm</option>
+                   <option value="15">15 mm</option>
+                   <option value="15.5">15.5 mm</option>
+                   <option value="16">16 mm</option>
+                   <option value="40">40 mm</option>
+                </select>
+
+                <label for="category">Category:</label>
+                <select name="Category" class="form-control" id="category">
+                    <option value="">Select Category</option>
+                    <option value="Blanket">Blanket</option>
+                    <option value="Stitch/Granny Square">Stitch/Granny Square</option>
+                    <option value="Headwear">Headwear</option>
+                    <option value="Clothing">Clothing</option>
+                    <option value="Scarf">Scarf</option>
+                    <option value="Basket">Basket</option>
+                    <option value="Amigurumi">Amigurumi</option>
+                    <option value="Accessory">Accessory</option>
+                </select>
+
+                <label>Stitches:</label>
+                <div>
+                    <div><input type="checkbox" name="Stitches" value="Single Crochet"> Single Crochet</div>
+                    <div><input type="checkbox" name="Stitches" value="Double Crochet"> Double Crochet</div>
+                    <div><input type="checkbox" name="Stitches" value="Bobble"> Bobble</div>
+                    <div><input type="checkbox" name="Stitches" value="Decrease"> Decrease</div>
+                    <div><input type="checkbox" name="Stitches" value="Griddle"> Griddle</div>
+                    <div><input type="checkbox" name="Stitches" value="Half Double Crochet"> Half Double Crochet</div>
+                    <div><input type="checkbox" name="Stitches" value="Herringbone Double Crochet"> Herringbone Double Crochet</div>
+                    <div><input type="checkbox" name="Stitches" value="Herringbone Half Double Crochet"> Herringbone Half Double Crochet</div>
+                    <div><input type="checkbox" name="Stitches" value="Increase"> Increase</div>
+                    <div><input type="checkbox" name="Stitches" value="Moss / Linen"> Moss / Linen</div>
+                    <div><input type="checkbox" name="Stitches" value="Puff"> Puff</div>
+                    <div><input type="checkbox" name="Stitches" value="Shell Stitch"> Shell Stitch</div>
+                    <div><input type="checkbox" name="Stitches" value="Slip Stitch"> Slip Stitch</div>
+                    <div><input type="checkbox" name="Stitches" value="Triple Crochet"> Triple Crochet</div>
+                    <div><input type="checkbox" name="Stitches" value="Tunisian"> Tunisian</div>
+                </div>
             </div>
-            <button type="submit" name="action" id = recommend-pattern value="Recommend Pattern" class="btn btn-primary">Recommend a Pattern</button>
+            <button type="submit" name="action" value="Recommend Pattern" id="recommend-pattern" class="btn btn-primary">Recommend a Pattern</button>
             <button type="submit" name="action" value="Recommend Attribute" class="btn btn-secondary">Recommend an Attribute</button>
         </form>
     </div>
-
      <script>
             document.getElementById('recommend-pattern').addEventListener('click', function() {
                 showLoading();

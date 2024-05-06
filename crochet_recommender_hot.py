@@ -199,18 +199,41 @@ def define_bayesian_network_structure():
     return model_structure
 
 
-def plot_bayesian_network(model_structure):
-    G = nx.DiGraph(model_structure)
+
+def plot_bayesian_network(edges, unique_stitches):
+    G = nx.DiGraph()
+
+    # Add all edges from the edges list, replacing unique stitch nodes with 'stitches'
+    for source, target in edges:
+        if source in unique_stitches:
+            source = 'stitches'
+        if target in unique_stitches:
+            target = 'stitches'
+        G.add_edge(source, target)
+
+    # Remove self-loops on 'stitches' node if any
+    G.remove_edges_from(nx.selfloop_edges(G))
+
     pos = nx.spring_layout(G, seed=42)  # positions for all nodes
+    pos['stitches'] = np.array([0.3, 0.3])
+    # Node colors and sizes
+    node_colors = ['yellow' if node == 'stitches' else 'pink' for node in G.nodes()]
+    node_sizes = [8000 if node == 'stitches' else 1000 for node in G.nodes()]  # Increased size for 'stitches'
 
-    # nodes
-    nx.draw_networkx_nodes(G, pos, node_size=2000, node_color='skyblue')
-
-    # edges
+    nx.draw_networkx_nodes(G, pos, node_size=node_sizes, node_color=node_colors)
     nx.draw_networkx_edges(G, pos, edgelist=G.edges(), width=2, alpha=0.5, edge_color='gray')
-
-    # labels
     nx.draw_networkx_labels(G, pos, font_size=20, font_family="sans-serif", font_weight='bold')
+
+    # Add visual subnodes within 'stitches' node
+    radius = 0.05
+    sub_node_radius = 0.01
+    angle_step = 360 / len(unique_stitches)
+    sub_font_size = 4
+    for i, stitch in enumerate(unique_stitches):
+        angle = np.deg2rad(i * angle_step)
+        sub_pos = (pos['stitches'][0] + radius * np.cos(angle), pos['stitches'][1] + radius * np.sin(angle))
+        plt.gca().add_patch(plt.Circle(sub_pos, sub_node_radius, color='orange', ec='black', zorder=10))
+        plt.text(sub_pos[0], sub_pos[1], stitch, fontsize=sub_font_size, ha='center', va='center', zorder=11)
 
     plt.title("Bayesian Network", fontsize=24)
     plt.axis('off')
@@ -248,14 +271,14 @@ def build_and_learn_bayesian_model(data, model_structure, load=False, doplot=Fal
     if load:
         model = load_model('Bayseian_Model_Crochet_PatternsHotEM.pkl')
         if doplot:
-            plot_bayesian_network(model_structure)
+            plot_bayesian_network(model_structure, unique_stitches)
         return model, mappings
     else:
         model = BayesianNetwork(model_structure)
         save_model(model, 'Bayseian_Model_Crochet_PatternsHotEM.pkl')
         model.fit(encoded_data, estimator=EM)
         if doplot:
-            plot_bayesian_network(model_structure)
+            plot_bayesian_network(model_structure, unique_stitches)
         return model, mappings
 
 def user_input_for_attribute(attribute, possible_values=None):
@@ -328,7 +351,7 @@ def get_user_input_for_attributes(recommendation_attributes, data):
 
 
 # GLOBAL USE FOR WEBSITE
-filename = "venv/crochet_patterns.csv"
+filename = "crochet_patterns.csv"
 data, unique_stitches = pattern_csv_to_df(filename)
 
 recommendation_attributes = [
@@ -406,7 +429,11 @@ def encode_user_input(attributes, user_inputs, mappings):
             if 'Stitches' == attribute:
                 # Convert the input string to a list of stitch names, trimming whitespace
                 # If user_inputs['Stitches'] is a string like "stitch1, stitch2, stitch3"
-                stitch_list = [stitch.strip() for stitch in user_inputs['Stitches'].split(',')]
+                stitch_list = []
+                if (type(user_inputs['Stitches']) == list):
+                    stitch_list = user_inputs['Stitches']
+                else:
+                    stitch_list = [stitch.strip() for stitch in user_inputs['Stitches'].split(',')]
                 stitch_input = {stitch: 1 for stitch in stitch_list}
                 for key, value in stitch_input.items():
                     encoded_input[key] = value
@@ -438,6 +465,13 @@ def recommend_patterns_from_bayes(input_data):
     found_match = False
     top_n = 1
     threshold_probabilities = {}  # To store initial top probabilities for reference
+    recommended_patterns = recommend_patterns(data, input_data)
+    if recommended_patterns.empty:
+        print("No pattern match for given input data")
+        return pd.DataFrame()
+    elif recommended_patterns.shape[0] == 1:
+        print("Already only one pattern for given input data")
+        return recommended_patterns
     # TODO: Consider OR for searching based on stitches
     while not found_match and top_n <= 5:
         non_input_attributes = []
