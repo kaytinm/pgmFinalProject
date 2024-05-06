@@ -1,4 +1,5 @@
 from pgmpy.estimators import ExpectationMaximization as EM
+from pgmpy.estimators import MaximumLikelihoodEstimator
 import numpy as np
 from pgmpy.inference import VariableElimination
 from sklearn.model_selection import train_test_split
@@ -8,6 +9,8 @@ from pgmpy.models import BayesianNetwork
 import networkx as nx
 import matplotlib.pyplot as plt
 
+
+# Data collection and preperation section
 def update_category(row):
     title_lower = row['Title'].lower()
     if any(word in title_lower for word in ['blanket', 'throw']):
@@ -40,7 +43,14 @@ def preprocess_stitches(df):
         "Back Loop",
         "Increase"
     ]
+    decrease_keywords = [
+        "Two Together",
+        "Three Together"]
 
+    include_keywords = [
+        "Decrease",
+        "Increase"
+    ]
     # Explode the 'Stitches' column into separate rows for each stitch
     df_exploded = df['Stitches'].str.split(',').explode().str.strip()
 
@@ -51,12 +61,18 @@ def preprocess_stitches(df):
                 # Remove keyword and split by spaces to handle cases like 'Single Crochet Two Together'
                 parts = stitch.replace(keyword, '')
                 # Remove empty strings resulting from split and replace original stitch name
-                return keyword+','+ parts
+                if keyword in include_keywords:
+                    return keyword + ',' + parts
+                elif keyword in decrease_keywords:
+                    return keyword + ',' + parts
+                else:
+                    return parts
+                #return keyword+','+ parts
         return stitch
 
     # Apply cleaning function to each stitch name
     cleaned_stitches = df_exploded.dropna().apply(clean_stitch_name).str.split(',').explode().str.strip()
-    df['Cleaned_Stitches'] = cleaned_stitches.groupby(cleaned_stitches.index).apply(lambda x: ', '.join(x.unique()))
+    df['Cleaned_Stitches'] = cleaned_stitches.groupby(cleaned_stitches.index).apply(lambda x: ','.join(x.unique()))
     return df
 
 
@@ -126,7 +142,7 @@ def preprocess_stitches_for_bayesian_network(data):
         stitches_data = dfrow['Cleaned_Stitches']
         stitches = stitches_data.split(',')
         for unique_stitch in unique_stitches:
-            preprocess_stitches_df.loc[index, unique_stitch] = int(1) if unique_stitch in stitches else int(0)
+            preprocess_stitches_df.loc[index, unique_stitch] = True if unique_stitch in stitches else False
     return preprocess_stitches_df, unique_stitches
 
 
@@ -159,7 +175,7 @@ def pattern_csv_to_df(filename):
 
 
 
-
+# Baysian Model Section
 def define_bayesian_network_structure():
     # Basic structure based on domain knowledge
 
@@ -170,16 +186,13 @@ def define_bayesian_network_structure():
         ('Skill Level', 'Yarn Weight'),
         # Hook sizes tend to change with the category you generally use a smaller hook size for a armigrumi since it i
         ('Category','Hook Size'),
-        #('Category', 'Fiber Type'),
         # Different stitches are condidered harder than others
         # if there is increasing or deacreasing in the pattern this can effect the difficulty of the pattern
         # Stitches can be broke down into diffuculty level beginner, easy, intermediate and experienced
         # Switching between stitch types can also increase difficulty level in a crochet pattern so the number of stitches should also be accounted for
         # We should let the user specify if they only want a  specific stitch?
-        #('Skill Level', 'Stitches'),
         # Stitch type also impacts the look of crochet piece as some create more of a tight-knit look where others are looser
         # Stitches therefore also impact the category as you would use a tighter stitch for a stuffy so stuffing doesn't fall out
-        #('Category', 'Stitches')
     ]
     model_structure += [('Skill Level', stitch) for stitch in unique_stitches]
     model_structure += [('Category', stitch) for stitch in unique_stitches]
@@ -315,7 +328,7 @@ def get_user_input_for_attributes(recommendation_attributes, data):
 
 
 # GLOBAL USE FOR WEBSITE
-filename = "crochet_patterns.csv"
+filename = "venv/crochet_patterns.csv"
 data, unique_stitches = pattern_csv_to_df(filename)
 
 recommendation_attributes = [
@@ -369,17 +382,18 @@ def process_input_data(form_data):
 def get_top_recommendations(result, top_n=1):
     values = result.values
     flat_indices = np.argsort(values.flatten())[-top_n:][::-1]
+    top_probs = [0]
     top_values_indices = np.unravel_index(flat_indices, values.shape)
     no_to_name = result.no_to_name
     # Convert indices to meaningful names using no_to_name
-    top_values_and_probs = {}
+    top_values = {}
     for dim_index, indices in enumerate(top_values_indices):
         variable_name = result.variables[dim_index]
         name_mapping = no_to_name[variable_name]
         names = [name_mapping[index] for index in indices]
-        top_values_and_probs[variable_name] = {"Values": names, "Probabilities": values[indices]}
+        top_values[variable_name] = names
 
-    return top_values_and_probs
+    return top_values, top_probs
 
 
 def encode_user_input(attributes, user_inputs, mappings):
@@ -431,8 +445,10 @@ def recommend_patterns_from_bayes(input_data):
             if attr not in input_data:
                 non_input_attributes.append(attr)
         # Query the model
+        print("getting result")
         result = inference_engine.query(variables=non_input_attributes, evidence=input_data)
-        result_map = inference_engine.map_query(variables=non_input_attributes, evidence=input_data)
+        print("result got")
+        #result_map = inference_engine.map_query(variables=non_input_attributes, evidence=input_data)
         top_values, top_probs = get_top_recommendations(result, top_n=top_n)
         new_values = top_values.copy()
         # Handle Encoding
@@ -552,7 +568,7 @@ def main():
     ]
     filename = "venv/crochet_patterns.csv"
 
-    data = pattern_csv_to_df(filename)
+    data, unique_stitches = pattern_csv_to_df(filename)
     attributes = recommendation_attributes.copy()
     attributes.append(unique_stitches)
     # Define Bayesian network structure

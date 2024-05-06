@@ -1,5 +1,5 @@
 from flask import Flask, render_template, request, redirect, url_for, session
-from flask_session import Session  # Assuming Flask-Session is installed and configured
+from flask import Session  # Assuming Flask-Session is installed and configured
 from crochet_recommender_hot import *
 
 app = Flask(__name__)

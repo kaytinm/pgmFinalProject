@@ -6,10 +6,8 @@
   <component name="ChangeListManager">
     <list default="true" id="4caf94f7-73f5-4908-ab58-5387643bb1cc" name="Changes" comment="update requirements.txt">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/crochet_patterns.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ap.py" beforeDir="false" afterPath="$PROJECT_DIR$/ap.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/crochet_recommender_hot.py" beforeDir="false" afterPath="$PROJECT_DIR$/crochet_recommender_hot.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/crochet_recommender_no_hot.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -44,14 +42,12 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">
-    <property name="DefaultHtmlFileTemplate" value="HTML File" />
-    <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
-    <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$/venv" />
-    <property name="restartRequiresConfirmation" value="false" />
-    <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
-  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "Python.ap.executor": "Run",
+    "Python.crochet_recommender_hot.executor": "Run"
+  }
+}]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="C:\PGM\pgmFinalProject\venv" />
@@ -66,6 +62,7 @@
   <component name="RunManager" selected="Python.crochet_recommender_hot">
     <configuration name="ap" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="pgmFinalProject" />
+      <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
       <envs>
@@ -76,7 +73,7 @@
       <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="SCRIPT_NAME" value="C:\PGM\pgmFinalProject\ap.py" />
+      <option name="SCRIPT_NAME" value="C:/PGM/pgmFinalProject/ap.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -87,6 +84,7 @@
     </configuration>
     <configuration name="crocher_finder" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="pgmFinalProject" />
+      <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
       <envs>
@@ -108,6 +106,7 @@
     </configuration>
     <configuration name="crochet_reccomender" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="pgmFinalProject" />
+      <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
       <envs>
@@ -129,6 +128,7 @@
     </configuration>
     <configuration name="crochet_recommender_hot" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="pgmFinalProject" />
+      <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
       <envs>
@@ -150,6 +150,7 @@
     </configuration>
     <configuration name="crochet_recommender_no_hot" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="pgmFinalProject" />
+      <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
       <envs>
@@ -169,6 +170,13 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
+    <list>
+      <item itemvalue="Python.ap" />
+      <item itemvalue="Python.crocher_finder" />
+      <item itemvalue="Python.crochet_reccomender" />
+      <item itemvalue="Python.crochet_recommender_hot" />
+      <item itemvalue="Python.crochet_recommender_no_hot" />
+    </list>
     <recent_temporary>
       <list>
         <item itemvalue="Python.crochet_recommender_hot" />
@@ -315,14 +323,7 @@
       <option name="project" value="LOCAL" />
       <updated>1714948039708</updated>
     </task>
-    <task id="LOCAL-00018" summary="update requirements.txt">
-      <created>1714948886935</created>
-      <option name="number" value="00018" />
-      <option name="presentableId" value="LOCAL-00018" />
-      <option name="project" value="LOCAL" />
-      <updated>1714948886935</updated>
-    </task>
-    <option name="localTasksCounter" value="19" />
+    <option name="localTasksCounter" value="18" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -335,7 +336,6 @@
         </entry>
       </map>
     </option>
-    <option name="oldMeFiltersMigrated" value="true" />
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="webscrape easycrochet for patterns to .csv file" />
@@ -356,14 +356,44 @@
           <option name="timeStamp" value="122" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/crochet_recommender_hot.py</url>
-          <line>491</line>
-          <option name="timeStamp" value="235" />
+          <url>file://$PROJECT_DIR$/crochet_recommender_no_hot.py</url>
+          <line>424</line>
+          <option name="timeStamp" value="145" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/crochet_recommender_hot.py</url>
-          <line>490</line>
-          <option name="timeStamp" value="236" />
+          <url>file://$PROJECT_DIR$/crochet_recommender_no_hot.py</url>
+          <line>573</line>
+          <option name="timeStamp" value="154" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/crochet_recommender_no_hot.py</url>
+          <line>558</line>
+          <option name="timeStamp" value="182" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/crochet_recommender_no_hot.py</url>
+          <line>393</line>
+          <option name="timeStamp" value="184" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/crochet_recommender_no_hot.py</url>
+          <line>783</line>
+          <option name="timeStamp" value="198" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/crochet_recommender_no_hot.py</url>
+          <line>732</line>
+          <option name="timeStamp" value="200" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/crochet_recommender_no_hot.py</url>
+          <line>592</line>
+          <option name="timeStamp" value="201" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/crochet_recommender_no_hot.py</url>
+          <line>766</line>
+          <option name="timeStamp" value="203" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/ap.py</url>
@@ -372,23 +402,38 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/crochet_recommender_hot.py</url>
-          <line>467</line>
+          <line>505</line>
           <option name="timeStamp" value="248" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/crochet_recommender_hot.py</url>
-          <line>271</line>
+          <line>306</line>
           <option name="timeStamp" value="270" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/crochet_recommender_hot.py</url>
-          <line>381</line>
+          <line>417</line>
           <option name="timeStamp" value="275" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/crochet_recommender_hot.py</url>
-          <line>379</line>
+          <line>415</line>
           <option name="timeStamp" value="276" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/crochet_recommender_hot.py</url>
+          <line>448</line>
+          <option name="timeStamp" value="277" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/crochet_recommender_hot.py</url>
+          <line>577</line>
+          <option name="timeStamp" value="279" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/crochet_recommender_hot.py</url>
+          <line>75</line>
+          <option name="timeStamp" value="280" />
         </line-breakpoint>
       </breakpoints>
       <default-breakpoints>
