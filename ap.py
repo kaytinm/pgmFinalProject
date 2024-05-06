@@ -49,7 +49,7 @@ def recommend_attribute():
         recommendation = get_recommendation_for_attribute(attribute_name, input_data)
         print(recommendation)
         # Render a template to show the recommendation results
-        return render_template('attribute_result.html', recommendation=recommendation[attribute_name], attribute_name=attribute_name, probability=recommendation['Probability'])
+        return render_template('attribute_result.html', recommendation=recommendation[attribute_name], attribute_name=attribute_name)
     # On GET request, just show the form to enter the attribute name
     return render_template('select_attribute.html')
 

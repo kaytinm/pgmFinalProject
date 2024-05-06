@@ -1,3 +1,4 @@
+import sklearn.metrics
 from pgmpy.estimators import ExpectationMaximization as EM
 from pgmpy.estimators import MaximumLikelihoodEstimator
 import numpy as np
@@ -8,7 +9,11 @@ import pandas as pd
 from pgmpy.models import BayesianNetwork
 import networkx as nx
 import matplotlib.pyplot as plt
-
+from sklearn.metrics import mean_squared_error
+from sklearn.metrics import mean_absolute_error
+from sklearn.metrics import accuracy_score
+from sklearn.metrics import precision_recall_fscore_support
+import random
 
 # Data collection and preperation section
 def update_category(row):
@@ -362,7 +367,7 @@ def get_user_input_for_attributes(recommendation_attributes, data):
 
 
 # GLOBAL USE FOR WEBSITE
-filename = "crochet_patterns.csv"
+filename = "venv/crochet_patterns.csv"
 data, unique_stitches = pattern_csv_to_df(filename)
 
 recommendation_attributes = [
@@ -465,8 +470,7 @@ def encode_user_input(attributes, user_inputs, mappings):
 
 
 # Web app
-def recommend_patterns_from_bayes(input_data):
-    print(input_data)
+def recommend_patterns_from_bayes(input_data, inference_engine=inference_engine):
     encoded_input = encode_user_input(recommendation_attributes_orig, input_data, mappings)
     input_data = {k: v for k, v in encoded_input.items() if v is not None}
     probable_attributes = {}
@@ -476,10 +480,10 @@ def recommend_patterns_from_bayes(input_data):
     recommended_patterns = recommend_patterns(data, input_data)
     if recommended_patterns.empty:
         print("No pattern match for given input data")
-        return pd.DataFrame()
+        #return pd.DataFrame()
     elif recommended_patterns.shape[0] == 1:
         print("Already only one pattern for given input data")
-        return recommended_patterns
+        #return recommended_patterns
     # TODO: Consider OR for searching based on stitches
     non_input_attributes = []
     for attr in recommendation_attributes:
@@ -559,7 +563,7 @@ def get_recommendation_for_attribute(recommendation_attribute, input_data):
             result_map = inference_engine.map_query(variables=recommendation_attribute, evidence=input_data,
                                                     elimination_order="MinWeight")
 
-            if recommendation_attribute in mappings.keys():
+            if recommendation_attribute[0] in mappings.keys():
                 for key, value in mappings[recommendation_attribute].items():
                     if result_map[recommendation_attribute] == -1:
                         result_map[recommendation_attribute] = 'Unspecified'
@@ -570,51 +574,149 @@ def get_recommendation_for_attribute(recommendation_attribute, input_data):
             else:
                 return result_map
 
+def random_list_within_list(values_list):
+    length = random.randint(1, min(len(values_list), len(values_list)))
+    return [random.choice(values_list) for _ in range(length)]
 
-def evaluate_model(df, recommendation_attributes):
+# EVALUATION
+def evaluate_model_patrern_recommender_random(df, recommendation_attributes):
+    model_structure = define_bayesian_network_structure()
+    train_df, test_df = train_test_split(df, test_size=0.2, random_state=42)
+    rec_attrs = recommendation_attributes.copy()
+    bayesian_model, mappings = build_and_learn_bayesian_model(train_df[recommendation_attributes], model_structure)
+    encode_train_df, map = encode_data(train_df[rec_attrs])
+    encoded_test_df, map = encode_data(test_df[rec_attrs])
+    train_inference = VariableElimination(bayesian_model)
+    if 'Stitches' in rec_attrs:
+        rec_attrs.remove('Stitches')
+
+    def test_model_with_random_inputs(test_data):
+        results = []
+        for index, row in test_data.iterrows():
+            # Simulating partial user input from test data (random selection of attributes)
+            random_attrs = random_list_within_list(rec_attrs)
+            random_input_data = row[random_attrs].dropna().to_dict()
+            # Recommend patterns based on this input
+            recommended_patterns = recommend_patterns_from_bayes(random_input_data, train_inference)
+            # Check if the actual row's pattern is in the recommended patterns
+            is_in_recommended = test_data.loc[index, recommendation_attributes].isin(recommended_patterns).all()
+            results.append((index, is_in_recommended, recommended_patterns))
+
+        return pd.DataFrame(results, columns=['Test Index', 'Is in Recommended', 'Recommended Patterns'])
+
+    test_results = test_model_with_random_inputs(test_df, recommendation_attributes)
+    return test_results
+
+def evaluate_model(df, recommendation_attributes, category_eval="Hook Size"):
     # Build and learn the Bayesian model
     model_structure = define_bayesian_network_structure()
     bayesian_model, mappings = build_and_learn_bayesian_model(data[recommendation_attributes], model_structure)
     train_df, test_df = train_test_split(df, test_size=0.2, random_state=42)
+    rec_attrs = recommendation_attributes.copy()
+    encode_train_df, map = encode_data(train_df[rec_attrs])
+    encoded_test_df, map = encode_data(test_df[rec_attrs])
+    if 'Stitches' in rec_attrs:
+        rec_attrs.remove('Stitches')
+    a = recommendation_attributes.copy()
+    if 'Stitches' in a:
+        a.remove('Stitches')
 
-    bayesian_model, mappings = build_and_learn_bayesian_model(data[recommendation_attributes], model_structure)
-
-
+    def find_nearest(array, value):
+        array = np.asarray(array)
+        idx = (np.abs(array - value)).argmin()
+        return array[idx]
     # Generate predictions for a specified column
-    def predict(model, data, target):
+    def predict(model, data, target, known_values):
         inference = VariableElimination(model)
         predictions = []
+
         for _, row in data.iterrows():
             evidence = row.to_dict()
-            evidence.pop(target)  # Remove the target variable from evidence
-            predicted = inference.map_query(variables=[target], evidence=evidence)
+            evidence_vals = {k: v for k, v in evidence.items() if k in a}
+            vals = encode_user_input(a, evidence_vals, mappings)
+            cleaned_data = {k: v for k, v in vals.items() if v is not None}
+            cleaned_data.pop(target)  # Remove the target variable from evidence
+            evidence.pop(target)
+            for k, v in cleaned_data.items():
+                if v not in encode_train_df[k].values:
+                    nearest = find_nearest(encode_train_df[k].values, v)
+                    cleaned_data[k] = nearest
+            predicted = inference.map_query(variables=[target], evidence=cleaned_data, elimination_order="MinWeight", show_progress=False)
             predictions.append(predicted[target])
         return predictions
 
     # Train the model
-    bayesian_model = build_and_learn_bayesian_model(train_df[recommendation_attributes], model_structure)
+    known_values = {attr: np.unique(train_df[attr]) for attr in rec_attrs}
+
+    bayesian_model, mappings = build_and_learn_bayesian_model(data[rec_attrs], model_structure)
 
 
     # Predict the 'Category' for test data
-    test_df['predicted_category'] = predict(bayesian_model, test_df, 'Category')
+    test_df['predicted_category'] = predict(bayesian_model, test_df, category_eval, known_values)
+
+    def percentage_within_tolerance(true_values, predicted_values, tolerance):
+        correct = 0
+        total = len(true_values)
+        for true, pred in zip(true_values, predicted_values):
+            if abs(true - pred) <= tolerance:
+                correct += 1
+        return (correct / total) * 100
+
+    tolerance_level = 0.05
+    true_values = encoded_test_df[category_eval]
+    predicted_values = test_df['predicted_category']
+    accuracy = accuracy_score(true_values, predicted_values)
+    print(f"Accuracy of predictions within ±{tolerance_level} units: {accuracy:.2f}")
+
+
+    precision, recall, f1_score, _ = precision_recall_fscore_support(true_values, predicted_values, average='macro')
+    print("Precision:", precision)
+    print("Recall:", recall)
+    print("F1 Score:", f1_score)
 
     # Evaluate accuracy
-    from sklearn.metrics import accuracy_score
-    accuracy = accuracy_score(test_df['Category'], test_df['predicted_category'])
-    print(f'Accuracy of the Bayesian network for Category prediction: {accuracy:.2f}')
+    mse = mean_squared_error(true_values, predicted_values)
+    print(f"mse: {mse:.2f}")
+
+    rmse = np.sqrt(mse)
+    print(f"rmse: {rmse:.2f}")
+
+    mae = mean_absolute_error(true_values, predicted_values)
+    print(f"mae: {mae:.2f}")
+    mape = sklearn.metrics.mean_
+
+    r2 = sklearn.metrics.r2_score(true_values, predicted_values)
+    print("R-squared:", r2)
 
 
+def evaluate_model_attributes(attributes):
+
+    print("Evaluate Hook Size")
+    evaluate_model(data, attributes, category_eval="Hook Size")
+    print("Evaluate Skill Level")
+    evaluate_model(data, attributes, category_eval="Skill Level")
+    print("Evaluate Yarn Weight")
+    evaluate_model(data, attributes, category_eval="Yarn Weight")
+    print("Evaluate Category")
+    evaluate_model(data, attributes, category_eval="Category")
+    for stitch in unique_stitches:
+        print("Evaluate ", stitch)
+        evaluate_model(data, attributes, category_eval=stitch)
+    pattern_results = evaluate_model_patrern_recommender_random(data, attributes)
+    print(pattern_results)
 def main():
     # Load and preprocess the data
+    filename = "venv/crochet_patterns.csv"
+
     recommendation_attributes = [
         'Skill Level', 'Yarn Weight',
         'Hook Size', 'Category', 'Stitches'
     ]
-    filename = "venv/crochet_patterns.csv"
-
     data, unique_stitches = pattern_csv_to_df(filename)
     attributes = recommendation_attributes.copy()
-    attributes.append(unique_stitches)
+    attributes.extend(unique_stitches)
+    evaluate_model_attributes(attributes)
+
     # Define Bayesian network structure
     model_structure = define_bayesian_network_structure()
     #plot_bayesian_network(model_structure)
