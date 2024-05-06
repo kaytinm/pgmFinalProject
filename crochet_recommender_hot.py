@@ -56,6 +56,8 @@ def preprocess_stitches(df):
 
     # Function to clean individual stitch names
     def clean_stitch_name(stitch):
+        if 'Tunisian' in stitch:
+            return 'Tunisian'
         for keyword in keywords:
             if keyword in stitch:
                 # Remove keyword and split by spaces to handle cases like 'Single Crochet Two Together'
@@ -86,15 +88,24 @@ def get_unique_stitches(df):
         "Back Loop",
         "Increase"
     ]
+    decrease_keywords = [
+        "Two Together",
+        "Three Together"]
 
+    include_keywords = [
+        "Decrease",
+        "Increase"
+    ]
     unique_stitches = df['Cleaned_Stitches'].str.split(',').explode().str.strip().drop_duplicates().sort_values().dropna()
     keywords_in_stitches = []
     for keyword in keywords:
-        unique_stitches = unique_stitches.replace(keyword, '', regex=True)
-        if keyword not in unique_stitches:
-            keywords_in_stitches.append(keyword)
+        if keyword in include_keywords:
+            unique_stitches = unique_stitches.replace(keyword, '', regex=True)
+        elif keyword in decrease_keywords:
+            unique_stitches = unique_stitches.replace(keyword, '', regex=True)
+
     unique_stitches_list = [stitch.strip() for stitch in unique_stitches]
-    unique_stitches_list.extend(keywords)
+    unique_stitches_list.extend(include_keywords)
     unique_stitches_set = sorted(set(unique_stitches_list))
     if "" in unique_stitches_set:
         unique_stitches_set.remove("")
@@ -142,7 +153,7 @@ def preprocess_stitches_for_bayesian_network(data):
         stitches_data = dfrow['Cleaned_Stitches']
         stitches = stitches_data.split(',')
         for unique_stitch in unique_stitches:
-            preprocess_stitches_df.loc[index, unique_stitch] = True if unique_stitch in stitches else False
+            preprocess_stitches_df.loc[index, unique_stitch] = 1 if unique_stitch in stitches else 0
     return preprocess_stitches_df, unique_stitches
 
 
@@ -437,17 +448,14 @@ def encode_user_input(attributes, user_inputs, mappings):
                 stitch_input = {stitch: 1 for stitch in stitch_list}
                 for key, value in stitch_input.items():
                     encoded_input[key] = value
-            if attribute in mappings and user_inputs[attribute] in mappings[attribute].keys():
-                # Map categorical string input to its corresponding integer code
-                if attribute != "Stitches":
-                    encoded_input[attribute] = mappings[attribute][user_inputs[attribute]]
-            elif attribute not in mappings:
-                # Assume it's already in the correct format (e.g., numeric input)
-                if attribute != "Stitches":
-                    encoded_input[attribute] = user_inputs[attribute]
             else:
-                # Handle unseen categories or missing mappings
-                encoded_input[attribute] = -1  # Or any other placeholder for unknown categories
+                if attribute in mappings and user_inputs[attribute] in mappings[attribute].keys():
+                    encoded_input[attribute] = mappings[attribute][user_inputs[attribute]]
+                elif attribute not in mappings:
+                    encoded_input[attribute] = user_inputs[attribute]
+                else :
+                    # Handle unseen categories or missing mappings
+                    encoded_input[attribute] = -1
         else:
             # Handle missing attributes if necessary
             if attribute != "Stitches":
@@ -473,15 +481,15 @@ def recommend_patterns_from_bayes(input_data):
         print("Already only one pattern for given input data")
         return recommended_patterns
     # TODO: Consider OR for searching based on stitches
+    non_input_attributes = []
+    for attr in recommendation_attributes:
+        if attr not in input_data:
+            non_input_attributes.append(attr)
+    # Query the model
+    print("getting result")
+    result = inference_engine.query(variables=non_input_attributes, evidence=input_data)
+    print("result got")
     while not found_match and top_n <= 5:
-        non_input_attributes = []
-        for attr in recommendation_attributes:
-            if attr not in input_data:
-                non_input_attributes.append(attr)
-        # Query the model
-        print("getting result")
-        result = inference_engine.query(variables=non_input_attributes, evidence=input_data)
-        print("result got")
         #result_map = inference_engine.map_query(variables=non_input_attributes, evidence=input_data)
         top_values, top_probs = get_top_recommendations(result, top_n=top_n)
         new_values = top_values.copy()
@@ -522,7 +530,7 @@ def recommend_patterns_from_bayes(input_data):
 
 # Web app
 def get_recommendation_for_attribute(recommendation_attribute, input_data):
-    encoded_input = encode_user_input(recommendation_attributes, input_data, mappings)
+    encoded_input = encode_user_input(recommendation_attributes_orig, input_data, mappings)
     input_data = {k: v for k, v in encoded_input.items() if v is not None}
     while recommendation_attribute not in recommendation_attributes_orig or recommendation_attribute in input_data:
         if recommendation_attribute not in recommendation_attributes_orig:
@@ -546,6 +554,8 @@ def get_recommendation_for_attribute(recommendation_attribute, input_data):
                         stitches_str += " ," + key
             return {"Stitches": stitches_str}
         else:
+            if (type(recommendation_attribute)!= list):
+                recommendation_attribute = [recommendation_attribute]
             result_map = inference_engine.map_query(variables=recommendation_attribute, evidence=input_data,
                                                     elimination_order="MinWeight")
 
@@ -620,8 +630,8 @@ def main():
     recommendation_attribute = None
     input_data, recommendation_attributes = get_user_input_for_attributes(recommendation_attributes, data)
 
-    encoded_input = encode_user_input(recommendation_attributes, input_data, mappings)
-    cleaned_data = {k: v for k, v in encoded_input.items() if v is not None}
+    #encoded_input = encode_user_input(recommendation_attributes, input_data, mappings)
+   # cleaned_data = {k: v for k, v in encoded_input.items() if v is not None}
     recommended_patterns = recommend_patterns_from_bayes(input_data)
    # recommended_patterns = recommend_patterns_from_input(recommendation_attributes, cleaned_data, inference_engine,
     #                                                     data)
@@ -629,7 +639,7 @@ def main():
     if not recommended_patterns.empty:
         print(recommended_patterns[['Title', 'Pattern Link']])
         # Make recommendations based on input
-    rec = get_recommendation_for_attribute('Stitches', input_data)
+    rec = get_recommendation_for_attribute('Hook Size', input_data)
     print(rec)
    # reccommend_attribute_based_on_user_input(recommendation_attributes_orig, input_data, data,
     #                                         recommendation_attributes, inference_engine)
