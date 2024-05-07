@@ -20,21 +20,23 @@ def update_category(row):
     title_lower = row['Title'].lower()
     if any(word in title_lower for word in ['blanket', 'throw']):
         return 'Blanket'
-    elif any(word in title_lower for word in ['beanie', 'hat', 'ear']):
-        return 'Headwear'
-    elif any(word in title_lower for word in ['scarf', 'cowl', 'neck']):
-        return 'Scarf'
-    elif any(word in title_lower for word in
-             ['shawl', 'vest', 'cardigan', 'sweater', 'hoodie', 'wrap', 'shrug', 'poncho', 'top', 'skirt', 'dress',
-              'afgan']):
+    elif any(word in title_lower for word in ['beanie', 'hat', 'ear', 'head', 'bonnet'] ) and 'bunny' not in title_lower:
         return 'Clothing'
-    elif 'basket' in title_lower:
-        return 'Basket'
-    elif any(word in title_lower for word in ['coaster', 'placemat', 'cozy', 'ornament']):
+    elif any(word in title_lower for word in ['scarf', 'cowl', 'neck']):
+        return 'Clothing'
+    elif any(word in title_lower for word in
+             ['shawl', 'vest', 'cardigan', ' tee', 'sweater', 'sock','hoodie', 'warmer','jumper', 'capelet'
+              'collar', 'wrap', 'shrug', 'poncho', 'top', 'skirt', 'dress', 'kimono', 'cover up'
+              'afghan', 'stocking', 'mask', 'mit', 'boot', 'glove'])and 'octopus' not in title_lower:
+        return 'Clothing'
+    elif any(word in title_lower for word in ['coaster', 'bow', 'placemat', 'cozy', 'ornament', 'crown', 'keychain', 'holder', 'towel', 'garland', 'bed', 'kitchen'
+                                              'basket', 'bag', 'stocking', 'cushion', 'applique','scrunchie', 'mask', 'cloth', 'pillow', 'purse', 'soap', 'cover'
+                                              'babygrow', 'mit', 'doily','pouffe', 'set', 'boot', 'scrub', 'glove', ' pad', 'pouch', ' mat', 'wall']):
         return 'Accessory'
     elif any(word in title_lower for word in
-             ['amigurumi', 'penguin', 'octopus', 'jellyfish', 'owl', 'dog', 'lion', 'bear', 'monkey', 'luffy', 'bee',
-              'panda', 'gnome', 'santa', 'frankenstein', 'pumpkin']):
+             ['amigurumi', 'penguin', 'octopus', 'jellyfish', 'owl', 'dog', 'lion', 'bear', 'monkey', 'luffy', 'bee', 'lovey', 'pineapple'
+              'panda', 'gnome', 'santa', 'frankenstein', 'giaraffe','frog', 'squid', 'worm', 'bunny', 'chick', 'worm','candy cane', 'motif'
+              'pumpkin', 'bunnies', 'monster', 'reindeer', 'tiger','slimes', 'christmas star', 'sunflower', 'cloud', 'egg', 'pizza']):
         return 'Amigurumi'
     else:
         return 'Stitch/Granny Square'
@@ -183,8 +185,6 @@ def pattern_csv_to_df(filename):
     df['Skill Level'] = df['Skill Level'].apply(extract_number)
     df['Hook Size'] = df['Hook Size'].apply(extract_mean_size)
     df['Category'] = df.apply(update_category, axis=1)
-    # Color doesn't have an impact in this case and doesn't really effect the pattern since a different color yarn can be picked
-    #df['Color'] = df['Color'].apply(check_multiple_colors).fillna('nan', inplace=True)
     df, unique_stitches = preprocess_stitches_for_bayesian_network(df)
 
     return df, unique_stitches
@@ -196,50 +196,44 @@ def define_bayesian_network_structure():
     # Basic structure based on domain knowledge
 
     model_structure = [
+        ('Yarn Weight', 'Skill Level'),
         # generally yarn weight impacts the hook size as the yarn weight increases the hook you should use tends to increase
-        ('Hook Size', 'Yarn Weight'),
+        ('Yarn Weight', 'Hook Size'),
+        ('Hook Size', 'Category')
         # Working with different sized yarns can impact the skill level for a project using a small yarn can tend to be difficult
-        ('Skill Level', 'Yarn Weight'),
+
         # Hook sizes tend to change with the category you generally use a smaller hook size for a armigrumi since it i
-        ('Category','Hook Size'),
-        # Different stitches are condidered harder than others
-        # if there is increasing or deacreasing in the pattern this can effect the difficulty of the pattern
-        # Stitches can be broke down into diffuculty level beginner, easy, intermediate and experienced
-        # Switching between stitch types can also increase difficulty level in a crochet pattern so the number of stitches should also be accounted for
-        # We should let the user specify if they only want a  specific stitch?
-        # Stitch type also impacts the look of crochet piece as some create more of a tight-knit look where others are looser
-        # Stitches therefore also impact the category as you would use a tighter stitch for a stuffy so stuffing doesn't fall out
     ]
-    model_structure += [('Skill Level', stitch) for stitch in unique_stitches]
-    model_structure += [('Category', stitch) for stitch in unique_stitches]
+    model_structure += [(stitch, 'Skill Level') for stitch in unique_stitches]
     return model_structure
-
-
-
-def plot_bayesian_network(edges, unique_stitches):
+def plot_bayesian_network(edges, stitches):
     G = nx.DiGraph()
 
-    # Add all edges from the edges list, replacing unique stitch nodes with 'stitches'
     for source, target in edges:
         if source in unique_stitches:
-            source = 'stitches'
+            source = 'Stitches'
         if target in unique_stitches:
-            target = 'stitches'
+            target = 'Stitches'
         G.add_edge(source, target)
 
-    # Remove self-loops on 'stitches' node if any
+        # Remove self-loops on 'stitches' node if any
     G.remove_edges_from(nx.selfloop_edges(G))
 
-    pos = nx.spring_layout(G, seed=42)  # positions for all nodes
-    pos['stitches'] = np.array([0.3, 0.3])
-    # Node colors and sizes
-    node_colors = ['yellow' if node == 'stitches' else 'pink' for node in G.nodes()]
-    node_sizes = [8000 if node == 'stitches' else 1000 for node in G.nodes()]  # Increased size for 'stitches'
+    # Graph layout for a clear hierarchy
+    pos = {
+        "Yarn Weight": (0.5, 1),  # Top-most level
+        "Hook Size": (0.3, 0.5),  # Middle , left
+        "Category": (0.3, 0),  # Bottom , left
+        "Skill Level": (0.7, 0),  # Bottom , right
+        "Stitches": (0.5, 0.3) # right, middle
+    }
 
+    node_colors = ['yellow' if node == 'Stitches' else 'pink' for node in G.nodes()]
+    node_sizes = [8000 if node == 'Stitches' else 1000 for node in G.nodes()]  # Increased size for 'stitches'
     nx.draw_networkx_nodes(G, pos, node_size=node_sizes, node_color=node_colors)
-    nx.draw_networkx_edges(G, pos, edgelist=G.edges(), width=2, alpha=0.5, edge_color='gray')
+    nx.draw_networkx_edges(G, pos, edgelist=G.edges(), arrowstyle='-|>', arrows=True, arrowsize=20, width=2, alpha=0.5,
+                           edge_color='gray')
     nx.draw_networkx_labels(G, pos, font_size=20, font_family="sans-serif", font_weight='bold')
-
     # Add visual subnodes within 'stitches' node
     radius = 0.05
     sub_node_radius = 0.01
@@ -247,14 +241,13 @@ def plot_bayesian_network(edges, unique_stitches):
     sub_font_size = 4
     for i, stitch in enumerate(unique_stitches):
         angle = np.deg2rad(i * angle_step)
-        sub_pos = (pos['stitches'][0] + radius * np.cos(angle), pos['stitches'][1] + radius * np.sin(angle))
+        sub_pos = (pos['Stitches'][0] + radius * np.cos(angle), pos['Stitches'][1] + radius * np.sin(angle))
         plt.gca().add_patch(plt.Circle(sub_pos, sub_node_radius, color='orange', ec='black', zorder=10))
         plt.text(sub_pos[0], sub_pos[1], stitch, fontsize=sub_font_size, ha='center', va='center', zorder=11)
 
-    plt.title("Bayesian Network", fontsize=24)
-    plt.axis('off')
-    plt.tight_layout()
+    plt.title("Bayesian Network for Crochet Patterns")
     plt.show()
+
 
 import pickle
 
@@ -388,7 +381,7 @@ recommendation_attributes.extend(unique_stitches)
 # Build and learn the Bayesian model
 model_structure = define_bayesian_network_structure()
 recommendation_data = data[recommendation_attributes]
-bayesian_model, mappings = build_and_learn_bayesian_model(recommendation_data, model_structure)
+bayesian_model, mappings = build_and_learn_bayesian_model(recommendation_data, model_structure, doplot=False)
 inference_engine = VariableElimination(bayesian_model)
 
 # Define attributes for recommendation
@@ -490,9 +483,9 @@ def recommend_patterns_from_bayes(input_data, inference_engine=inference_engine)
         if attr not in input_data:
             non_input_attributes.append(attr)
     # Query the model
-    print("getting result")
+    print(non_input_attributes)
+    print(input_data)
     result = inference_engine.query(variables=non_input_attributes, evidence=input_data)
-    print("result got")
     while not found_match and top_n <= 5:
         #result_map = inference_engine.map_query(variables=non_input_attributes, evidence=input_data)
         top_values, top_probs = get_top_recommendations(result, top_n=top_n)
@@ -522,9 +515,6 @@ def recommend_patterns_from_bayes(input_data, inference_engine=inference_engine)
 
         recommended_patterns = recommend_patterns(data, new_values)
         if not recommended_patterns.empty:
-            print("FOUND")
-            print(f"Found matches with top_{top_n} recommendations for {list(new_values.keys())}.")
-            print(recommended_patterns[recommendation_attributes_out])
             return recommended_patterns[recommendation_attributes_out]
         else:
             top_n += 1
@@ -575,37 +565,24 @@ def get_recommendation_for_attribute(recommendation_attribute, input_data):
                 return result_map
 
 def random_list_within_list(values_list):
-    length = random.randint(1, min(len(values_list), len(values_list)))
+    length = random.randint(1, len(values_list)-1)
     return [random.choice(values_list) for _ in range(length)]
 
+
+def custom_accuracy(true_values, predicted_values):
+    if len(true_values) != len(predicted_values):
+        raise ValueError("true_values and predicted_values must have the same length.")
+
+    correct = 0
+    total = len(true_values)
+
+    for true, pred in zip(true_values, predicted_values):
+        if true == pred:
+            correct += 1
+
+    accuracy = correct / total
+    return accuracy
 # EVALUATION
-def evaluate_model_patrern_recommender_random(df, recommendation_attributes):
-    model_structure = define_bayesian_network_structure()
-    train_df, test_df = train_test_split(df, test_size=0.2, random_state=42)
-    rec_attrs = recommendation_attributes.copy()
-    bayesian_model, mappings = build_and_learn_bayesian_model(train_df[recommendation_attributes], model_structure)
-    encode_train_df, map = encode_data(train_df[rec_attrs])
-    encoded_test_df, map = encode_data(test_df[rec_attrs])
-    train_inference = VariableElimination(bayesian_model)
-    if 'Stitches' in rec_attrs:
-        rec_attrs.remove('Stitches')
-
-    def test_model_with_random_inputs(test_data):
-        results = []
-        for index, row in test_data.iterrows():
-            # Simulating partial user input from test data (random selection of attributes)
-            random_attrs = random_list_within_list(rec_attrs)
-            random_input_data = row[random_attrs].dropna().to_dict()
-            # Recommend patterns based on this input
-            recommended_patterns = recommend_patterns_from_bayes(random_input_data, train_inference)
-            # Check if the actual row's pattern is in the recommended patterns
-            is_in_recommended = test_data.loc[index, recommendation_attributes].isin(recommended_patterns).all()
-            results.append((index, is_in_recommended, recommended_patterns))
-
-        return pd.DataFrame(results, columns=['Test Index', 'Is in Recommended', 'Recommended Patterns'])
-
-    test_results = test_model_with_random_inputs(test_df, recommendation_attributes)
-    return test_results
 
 def evaluate_model(df, recommendation_attributes, category_eval="Hook Size"):
     # Build and learn the Bayesian model
@@ -629,20 +606,40 @@ def evaluate_model(df, recommendation_attributes, category_eval="Hook Size"):
     def predict(model, data, target, known_values):
         inference = VariableElimination(model)
         predictions = []
+        if "Stitches" == target:
+            predictions = {}
 
         for _, row in data.iterrows():
             evidence = row.to_dict()
             evidence_vals = {k: v for k, v in evidence.items() if k in a}
             vals = encode_user_input(a, evidence_vals, mappings)
             cleaned_data = {k: v for k, v in vals.items() if v is not None}
-            cleaned_data.pop(target)  # Remove the target variable from evidence
-            evidence.pop(target)
+            old_target = target
+            if "Stitches" == target:
+                for stitch in unique_stitches:
+                    cleaned_data.pop(stitch)
+                    evidence.pop(stitch)
+            else:
+                cleaned_data.pop(target)
+                evidence.pop(target)
             for k, v in cleaned_data.items():
                 if v not in encode_train_df[k].values:
                     nearest = find_nearest(encode_train_df[k].values, v)
                     cleaned_data[k] = nearest
-            predicted = inference.map_query(variables=[target], evidence=cleaned_data, elimination_order="MinWeight", show_progress=False)
-            predictions.append(predicted[target])
+            if target == "Stitches":
+                predicted = inference.map_query(variables=unique_stitches, evidence=cleaned_data, elimination_order="MinWeight",
+                                                show_progress=False)
+            else:
+                predicted = inference.map_query(variables=[target], evidence=cleaned_data, elimination_order="MinWeight", show_progress=False)
+            if target == "Stitches":
+                for stitch in unique_stitches:
+                    if stitch in predictions.keys():
+                        predictions[stitch].append((predicted[stitch]))
+                    else:
+                        predictions[stitch] = [predicted[stitch]]
+
+            else:
+                predictions.append(predicted[old_target])
         return predictions
 
     # Train the model
@@ -652,19 +649,69 @@ def evaluate_model(df, recommendation_attributes, category_eval="Hook Size"):
 
 
     # Predict the 'Category' for test data
-    test_df['predicted_category'] = predict(bayesian_model, test_df, category_eval, known_values)
+    if category_eval == "Stitches":
+        true_values = {}
+        stitch_map = predict(bayesian_model, test_df, category_eval, known_values)
+        predicted_values = stitch_map
+        for stitch in unique_stitches:
+            true_values[stitch] = encoded_test_df[stitch].to_list()
+        true_vals = true_values
+        for k,v in true_vals.items():
+            true_vals[k] = np.array(true_vals[k])
+        for k,v in predicted_values.items():
+            predicted_values[k] = np.array(predicted_values[k])
+        all_true = []
+        all_pred = []
+        for stitch in unique_stitches:
+            all_true.extend(true_values[stitch])
+            all_pred.extend(predicted_values[stitch])
+        overall_accuracy = accuracy_score(all_true, all_pred)
+        print(f"Overall accuracy: {overall_accuracy:.2f}")
 
-    def percentage_within_tolerance(true_values, predicted_values, tolerance):
-        correct = 0
-        total = len(true_values)
-        for true, pred in zip(true_values, predicted_values):
-            if abs(true - pred) <= tolerance:
-                correct += 1
-        return (correct / total) * 100
+        metrics = {}
+        for stitch, preds in predicted_values.items():
+            true = true_values[stitch]
+            precision, recall, f1_score, _ = precision_recall_fscore_support(true, preds, average='binary')
+            metrics[stitch] = {
+                'Precision': precision,
+                'Recall': recall,
+                'F1 Score': f1_score
+            }
+        prec = []
+        rec = []
+        f1 = []
+        for stitch in unique_stitches:
+            prec.append(metrics[stitch]['Precision'])
+            rec.append(metrics[stitch]['Recall'])
+            f1.append(metrics[stitch]['F1 Score'])
+
+        # Print precision, recall, F1 for each stitch type
+        print("F1: ", np.array(f1).mean())
+        print('Precision: ',np.array(prec).mean())
+        print('Recall: ', np.array(rec).mean())
+
+        return
+
+    else:
+        test_df['predicted_category'] = predict(bayesian_model, test_df, category_eval, known_values)
 
     tolerance_level = 0.05
     true_values = encoded_test_df[category_eval]
     predicted_values = test_df['predicted_category']
+    if category_eval == 'Hook Size': # encode for categorical for evaluation
+        combined_list = list(true_values.copy())
+        combined_list.extend(predicted_values)
+        unique_values = sorted(set(combined_list))
+
+        # Create a dictionary to map each unique value to a unique code
+        encoding_dict = {value: idx for idx, value in enumerate(unique_values, start=1)}
+
+        # Encode both lists
+        encoded_list1 = [encoding_dict[value] for value in true_values.values]
+        true_values = encoded_list1
+        encoded_list2 = [encoding_dict[value] for value in predicted_values]
+        predicted_values = encoded_list2
+
     accuracy = accuracy_score(true_values, predicted_values)
     print(f"Accuracy of predictions within ±{tolerance_level} units: {accuracy:.2f}")
 
@@ -683,15 +730,13 @@ def evaluate_model(df, recommendation_attributes, category_eval="Hook Size"):
 
     mae = mean_absolute_error(true_values, predicted_values)
     print(f"mae: {mae:.2f}")
-    mape = sklearn.metrics.mean_
 
     r2 = sklearn.metrics.r2_score(true_values, predicted_values)
     print("R-squared:", r2)
 
 
 def evaluate_model_attributes(attributes):
-
-    print("Evaluate Hook Size")
+    ("Evaluate Hook Size")
     evaluate_model(data, attributes, category_eval="Hook Size")
     print("Evaluate Skill Level")
     evaluate_model(data, attributes, category_eval="Skill Level")
@@ -699,11 +744,9 @@ def evaluate_model_attributes(attributes):
     evaluate_model(data, attributes, category_eval="Yarn Weight")
     print("Evaluate Category")
     evaluate_model(data, attributes, category_eval="Category")
-    for stitch in unique_stitches:
-        print("Evaluate ", stitch)
-        evaluate_model(data, attributes, category_eval=stitch)
-    pattern_results = evaluate_model_patrern_recommender_random(data, attributes)
-    print(pattern_results)
+    print("Evaluate Stitches")
+    evaluate_model(data, attributes, category_eval="Stitches")
+
 def main():
     # Load and preprocess the data
     filename = "venv/crochet_patterns.csv"
