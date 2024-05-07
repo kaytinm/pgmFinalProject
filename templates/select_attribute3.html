@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Select Attribute for Recommendation</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    <style>
+        body {
+            background-color: #FFE5D9 ; /* Light peach background */
+            color: #424242; /* Dark grey text */
+        }
+        .container {
+            background-color: #FFF9E1; /* Light yellow container */
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Subtle shadow effect */
+            margin-top: 50px; /* Adjusted margin to match the second HTML document */
+        }
+        h1 {
+            color: #424242; /* Dark grey heading */
+        }
+        p {
+            color: #424242; /* Dark grey paragraph */
+        }
+        .form-control {
+            background-color: #FFF0E8; /* Light pink input fields */
+            border: 1px solid #FFD4C2; /* Pinkish border */
+        }
+        .btn-primary {
+            background-color: #FFE066; /* Darker yellow primary button */
+            border-color: #FFE066;
+            color: #424242; /* Dark grey text */
+        }
+        .btn-primary:hover {
+            background-color: #FFCC00; /* Dark yellow peach on hover */
+            border-color: #FFCC00;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <h1>Select an Attribute</h1>
+        <p>Please enter the attribute name for which you would like to get a recommendation:</p>
+        <form action="{{ url_for('recommend_attribute') }}" method="post">
+            <div class="form-group">
+                <input type="text" name="attribute_name" class="form-control" placeholder="Enter attribute name" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Get Recommendation</button>
+        </form>
+    </div>
+</body>
+</html>

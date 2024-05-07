@@ -6,7 +6,7 @@ from pgmpy.inference import VariableElimination
 from sklearn.model_selection import train_test_split
 import re
 import pandas as pd
-from pgmpy.models import MarkovNetwork
+from pgmpy.models import BayesianNetwork
 import networkx as nx
 import matplotlib.pyplot as plt
 from pgmpy.factors.discrete import DiscreteFactor
@@ -73,7 +73,6 @@ def get_yardage_range(data):
     return data
 
 
-
 def average_weight(yarn_weight_string):
     yarn_weights = {
         'Lace': 1,
@@ -94,9 +93,7 @@ def average_weight(yarn_weight_string):
 
     # Return the average of these values
     if numeric_weights:
-        #return max(set(numeric_weights))
-        #return str(weights)
-        return round(sum(numeric_weights) / len(numeric_weights),1)
+        return sum(numeric_weights) / len(numeric_weights)
     else:
         return -1  # In case of a typo or unrecognised yarn weight
 
@@ -121,9 +118,8 @@ def extract_mean_size(text):
     if numbers:
         numbers = list(map(float, numbers))  # Convert to float for accurate mean calculation
         if len(numbers) > 1:
-            #return str(numbers)
             return round((sum(numbers) / len(numbers))*4)/4 # Return the mean of the numbers round hook sizes are by .25s
-        return (numbers[0])#round(numbers[0]*4)/4 # Return the number directly if only one
+        return numbers[0] # Return the number directly if only one
     else:
         return -1  # Return the original text if no numbers are found
 
@@ -155,7 +151,6 @@ def pattern_csv_to_df(filename):
 
 
 # Baysian Model Section
-#TODO: change to markov model
 def define_network_structure():
     # Basic structure based on domain knowledge
     model_structure = [
@@ -181,15 +176,16 @@ def define_network_structure():
 
 def plot_network(model_structure):
     G = nx.DiGraph(model_structure)
-    pos = nx.spring_layout(G, seed=42)  # positions for all nodes
-
-    # nodes
-    nx.draw_networkx_nodes(G, pos, node_size=2000, node_color='skyblue')
-
-    # edges
-    nx.draw_networkx_edges(G, pos, edgelist=G.edges(), width=2, alpha=0.5, edge_color='gray')
-
-    # labels
+    pos = {
+        'Fiber Type': (0.5, 1),
+        'Average Yarn Weight': (0.3, 0.7),
+        'Average Hook Size': (0.3, 0.3),
+        'Category': (0.5, 0),
+        'Yardage Range': (0.7, 0.5),
+        'Skill Level': (0, 0)
+    }
+    nx.draw_networkx_nodes(G, pos, node_size=2000, node_color='pink')
+    nx.draw_networkx_edges(G, pos, edgelist=G.edges(), arrows=True, arrowsize=10, width=2, alpha=0.5, edge_color='gray')
     nx.draw_networkx_labels(G, pos, font_size=20, font_family="sans-serif", font_weight='bold')
 
     plt.title("Network", fontsize=24)
@@ -222,48 +218,55 @@ def encode_data(data):
     return encoded_data, mappings
 
 
-def calculate_joint_probabilities(data, variables):
+def calculate_probabilities(data, variables):
+    # similar to MLE
     clean_data = data.dropna(subset=variables)
     var_levels = [clean_data[var].astype('category').cat.categories for var in variables]
     all_combinations = pd.MultiIndex.from_product(var_levels, names=variables).to_frame(index=False)
+    # Calculate the joint frequency of the variables
     frequency_table = clean_data.groupby(variables).size().reset_index(name='counts')
     frequency_table = all_combinations.merge(frequency_table, on=variables, how='left').fillna(0)
+    # Convert frequency to probability
     total_counts = frequency_table['counts'].sum()
     frequency_table['probability'] = frequency_table['counts'] / total_counts
     return frequency_table
 
-def create_factors_for_markov_network(data, model_structure):
-    model = MarkovNetwork(model_structure)
+from pgmpy.factors.discrete.CPD import TabularCPD
+
+def create_factors_for_network(data, model_structure):
+    model = BayesianNetwork(model_structure)
 
     for edge in model.edges():
         # Calculate empirical probabilities for each edge
         variables = list(edge)
-        prob_table = calculate_joint_probabilities(data, variables)
+        prob_table = calculate_probabilities(data, variables)
         state_names = {var: list(set(prob_table[var].values)) for var in variables}
         # Create a factor from the probability table
         values = prob_table['probability'].values
         cardinality = [len(data[var].unique()) for var in variables]
-        factor = DiscreteFactor(variables, cardinality, values, state_names=state_names)
+        cbd = TabularCPD(variables, 2, values, state_names=state_names)
         # Add the factor to the model
-        model.add_factors(factor)
+        model.add_cpds(cbd)
 
     return model
 
-def build_and_learn_markov_model(data, model_structure, load=False, doplot=False):
-    # Initialize Markov Model
+def build_and_learn_model(data, model_structure, load=False, doplot=False):
     _, mappings = encode_data(data)
+    model1 = BayesianNetwork(model_structure)
+    model1.fit(data, MaximumLikelihoodEstimator)
+    #model2 = create_factors_for_network(data, model_structure)
+    model2 =  BayesianNetwork(model_structure)
     if load:
-        with open('Markov_Model_Crochet_Patterns2HotEM.pkl', 'rb') as f:
+        with open('Model_Crochet_Patterns3.pkl', 'rb') as f:
             model = pickle.load(f)
         return model, mappings
     else:
-        model = create_factors_for_markov_network(data, model_structure)
 
         if doplot:
             plot_network(model_structure)
-        with open('Markov_Model_Crochet_PatternsHot2EM.pkl', 'wb') as f:
-            pickle.dump(model, f)
-        return model, mappings
+        with open('Model_Crochet_Patterns3.pkl', 'wb') as f:
+            pickle.dump(model1, f)
+        return model1,model2
 
 def user_input_for_attribute(attribute, possible_values=None):
     if possible_values:
@@ -368,18 +371,17 @@ recommendation_attributes_out = [
 ]
 attributes = recommendation_attributes.copy()
 
-# Build and learn the markov model
 model_structure = define_network_structure()
 recommendation_data = data[recommendation_attributes]
-markov_model, mappings = build_and_learn_markov_model(recommendation_data, model_structure)
-inference_engine = VariableElimination(markov_model)
+model1,model2 = build_and_learn_model(recommendation_data, model_structure, doplot=True)
+inference_engine = VariableElimination(model1)
 
 # Define attributes for recommendation
 recommendation_attributes_orig = recommendation_attributes
 recommendation_attribute = None
 
 
-def process_input_data_markov(form_data):
+def process_input_data3(form_data):
     input_data = {}
 
     # Process standard attributes
@@ -433,7 +435,7 @@ def encode_user_input(attributes, user_inputs, mappings):
 
 
 # Web app
-def recommend_patterns_from_markov(input_data):
+def recommend_patterns_from_model(input_data):
     print(input_data)
     #encoded_input = encode_user_input(recommendation_attributes_orig, input_data, mappings)
     input_data = {k: v for k, v in input_data.items() if v is not None}
@@ -472,7 +474,7 @@ def recommend_patterns_from_markov(input_data):
         return pd.DataFrame()
 
 # Web app
-def get_recommendation_for_attribute_markov(recommendation_attribute, input_data):
+def get_recommendation_for_attribute3(recommendation_attribute, input_data):
     #encoded_input = encode_user_input(recommendation_attributes_orig, input_data, mappings)
 
     input_data = {k: v for k, v in input_data.items() if v is not None}
@@ -525,7 +527,7 @@ def evaluate_model(df, recommendation_attributes, target_val):
         return predictions
 
     # Train the model
-    model, _ = build_and_learn_markov_model(train_df[recommendation_attributes], model_structure)
+    model, _ = build_and_learn_model(train_df[recommendation_attributes], model_structure)
     inference = VariableElimination(model)
 
     # Predict the 'Category' for test data
@@ -579,12 +581,11 @@ def main():
     data = pattern_csv_to_df(filename)
     do_eval(data, recommendation_attributes)
     attributes = recommendation_attributes.copy()
-    # Define markov network structure
     model_structure = define_network_structure()
     #plot_network(model_structure)
     # Build and learn the markov model
-    markov_model, mappings = build_and_learn_markov_model(recommendation_data, model_structure)
-    inference_engine = VariableElimination(markov_model)
+    model1,model2 = build_and_learn_model(recommendation_data, model_structure)
+    inference_engine = VariableElimination(model1)
     # Define attributes for recommendation
 
     recommendation_attribute = None
@@ -592,7 +593,7 @@ def main():
 
     #encoded_input = encode_user_input(recommendation_attributes, input_data, mappings)
    # cleaned_data = {k: v for k, v in encoded_input.items() if v is not None}
-    recommended_patterns = recommend_patterns_from_markov(input_data)
+    recommended_patterns = recommend_patterns_from_model(input_data)
    # recommended_patterns = recommend_patterns_from_input(recommendation_attributes, cleaned_data, inference_engine,
     #                                                     data)
     print("Recommended Patterns:")
