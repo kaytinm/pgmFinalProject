@@ -520,6 +520,11 @@ def main():
         'Fiber Type', 'Yardage Range', 'Category', 'Average Hook Size'
 
     ]
+    recommendation_data = [
+        'Skill Level', 'Average Yarn Weight',
+        'Fiber Type', 'Yardage Range', 'Category', 'Average Hook Size'
+
+    ]
     filename = "crochet_patterns2.csv"
 
     data = pattern_csv_to_df(filename)
@@ -527,7 +532,7 @@ def main():
     attributes = recommendation_attributes.copy()
     model_structure = define_network_structure()
     #plot_network(model_structure)
-    markov_model, mappings = build_and_learn_markov_model(recommendation_data, model_structure)
+    markov_model, mappings = build_and_learn_markov_model(data, model_structure)
     inference_engine = VariableElimination(markov_model)
 
     recommendation_attribute = None

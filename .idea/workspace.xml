@@ -5,22 +5,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="4caf94f7-73f5-4908-ab58-5387643bb1cc" name="Changes" comment="update crochet_recommender_hot.py">
-      <change afterPath="$PROJECT_DIR$/crochet_patterns.csv" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/templates/recommender_markov_input.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/templates/select_attribute2.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/venv/crochet_patterns2.csv" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ap.py" beforeDir="false" afterPath="$PROJECT_DIR$/ap.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/crochet_recommender_2.py" beforeDir="false" afterPath="$PROJECT_DIR$/crochet_recommender_2.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/crochet_recommender_3.py" beforeDir="false" afterPath="$PROJECT_DIR$/crochet_recommender_3.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/crochet_recommender_hot.py" beforeDir="false" afterPath="$PROJECT_DIR$/crochet_recommender_hot.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/bayes_recommender2_index.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/recommender2_input.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/bayes_recommender_index.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/bayes_recommender_input.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/index.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/markov_recommender_index.html" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/results.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/results.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/select_attribute3.html" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/select_attribute_markov.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/select_attribute_markov.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/crochet_recommender_crochet_bayes.py" beforeDir="false" afterPath="$PROJECT_DIR$/crochet_recommender_crochet_bayes.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/crochet_recommender_crochet_markov.py" beforeDir="false" afterPath="$PROJECT_DIR$/crochet_recommender_crochet_markov.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -63,10 +49,11 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">
-    <property name="DefaultHtmlFileTemplate" value="HTML File" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$/venv" />
-  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "Python.ap.executor": "Run"
+  }
+}]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="C:\PGM\pgmFinalProject\venv" />
@@ -81,6 +68,7 @@
   <component name="RunManager" selected="Python.ap">
     <configuration name="ap" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="pgmFinalProject" />
+      <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
       <envs>
@@ -102,6 +90,7 @@
     </configuration>
     <configuration name="crocher_finder" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="pgmFinalProject" />
+      <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
       <envs>
@@ -123,6 +112,7 @@
     </configuration>
     <configuration name="crochet_reccomender" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="pgmFinalProject" />
+      <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
       <envs>
@@ -144,6 +134,7 @@
     </configuration>
     <configuration name="crochet_recommender_hot" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="pgmFinalProject" />
+      <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
       <envs>
@@ -165,6 +156,7 @@
     </configuration>
     <configuration name="crochet_recommender_no_hot" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="pgmFinalProject" />
+      <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
       <envs>
@@ -366,7 +358,6 @@
         </entry>
       </map>
     </option>
-    <option name="oldMeFiltersMigrated" value="true" />
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="webscrape easycrochet for patterns to .csv file" />

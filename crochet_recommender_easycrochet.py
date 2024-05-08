@@ -188,7 +188,7 @@ def define_bayesian_network_structure(unique_stitches):
     ]
     model_structure += [(stitch, 'Skill Level') for stitch in unique_stitches]
     return model_structure
-def plot_bayesian_network(edges, stitches):
+def plot_bayesian_network(edges, unique_stitches):
     G = nx.DiGraph()
 
     for source, target in edges:
@@ -250,7 +250,7 @@ def encode_data(data):
             encoded_data[column] = data[column]
     return encoded_data, mappings
 
-def build_and_learn_bayesian_model(data, model_structure, load=False, doplot=False):
+def build_and_learn_bayesian_model(data, model_structure, unique_stitches, load=False, doplot=False):
     # Initialize Bayesian Model
     encoded_data = data.copy()
     encoded_data, mappings = encode_data(data)
@@ -549,7 +549,7 @@ def custom_accuracy(true_values, predicted_values):
     return accuracy
 # EVALUATION
 
-def evaluate_model(df, recommendation_attributes, category_eval="Hook Size"):
+def evaluate_model(df, recommendation_attributes,data, unique_stitches, category_eval="Hook Size"):
     # Build and learn the Bayesian model
     model_structure = define_bayesian_network_structure()
     bayesian_model, mappings = build_and_learn_bayesian_model(data[recommendation_attributes], model_structure)
@@ -568,7 +568,7 @@ def evaluate_model(df, recommendation_attributes, category_eval="Hook Size"):
         idx = (np.abs(array - value)).argmin()
         return array[idx]
 
-    def predict(model, data, target, known_values):
+    def predict(model, data, target, known_values, unique_stitches):
         inference = VariableElimination(model)
         predictions = []
         if "Stitches" == target:
@@ -728,7 +728,7 @@ def main():
     model_structure = define_bayesian_network_structure()
     #plot_bayesian_network(model_structure)
     # Build and learn the Bayesian model
-    bayesian_model, mappings = build_and_learn_bayesian_model(recommendation_data, model_structure)
+    bayesian_model, mappings = build_and_learn_bayesian_model(data, model_structure)
     inference_engine = VariableElimination(bayesian_model)
 
     recommendation_attributes_orig = [
