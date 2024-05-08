@@ -37,5 +37,6 @@ This project implements a web application for recommending crochet patterns base
 2.  Select a recommendation engine.
 3.  Input your attribute data.
 4.  Select Recommend Patterns or Recommend Attribute.
-      a.    If you select Recommend Attribute input attribute and select button.
+ - i. If you select "Recommend Attribute". Type the attribute you want to recommend and click the button.
+ - NOTE: if you do not type in a correct attribute this will not work
 6. Submit the form to receive personalized crochet pattern recommendations.
