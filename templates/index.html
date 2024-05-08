@@ -4,64 +4,115 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Crochet Pattern Recommendation System</title>
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
     <style>
         body {
-            background-color: #FFE5D9; /* Light peach background */
-            color: #424242; /* Dark grey text */
+            font-family: 'Roboto', sans-serif;
+            background-color: #FDE2E4;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: auto;
+        }
+        .title {
+            text-align: center;
+            font-size: 36px;
+            font-weight: bold;
+            margin-bottom: 30px;
+            color: #5D3A3A;
+            padding-top: 20px;
         }
         .container {
-            background-color: #FFF9E1; /* Light yellow container */
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Subtle shadow effect */
-            display: flex; /* Using Flexbox for layout */
-            justify-content: space-between; /* Space between the cards */
+            flex-direction: column;
+            background-color: #FFF9E1;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+            max-width: 1200px;
+            display: flex;
+            justify-content: space-evenly;
+            flex-wrap: wrap;
+            gap: 10px;
+            overflow: wrap;
         }
         .card {
-            flex: 1; /* Flex grow to fill space */
-            margin: 10px; /* Margin around each card */
+            flex: 1 1 auto;
             padding: 20px;
-            background-color: #fff; /* White background for cards */
-            border-radius: 10px; /* Rounded corners */
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Shadow for cards */
+            flex-wrap: wrap;
+            flex-direction: column;
+            background-color: #FFF0E8;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            box-sizing: border-box;
         }
-        h1, h2 {
-            color: #424242; /* Dark grey heading */
+        .card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2);
+        }
+        .card h2 {
+            font-size: 20px;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        .card p {
+            font-size: 16px;
+            text-align: center;
+            margin-bottom: 20px;
         }
         .btn-primary {
-            background-color: #FFE066; /* Darker yellow button */
-            border-color: #FFE066;
-            color: #424242; /* Dark grey text */
+            display: flex;
+            flex: 1 1 auto;
+            flex-direction: column;
+            background-color: #FFE066;
+            border: none;
+            padding: 12px 24px;
+            color: #333;
+            text-transform: uppercase;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            font-weight: 500;
+            font-size: 16px;
         }
         .btn-primary:hover {
-            filter: brightness(90%);
+            background-color: #DFA887;
         }
     </style>
 </head>
 <body>
-    <div class="container mt-5">
-        <h1>Crochet Pattern Recommendation System</h1>
-        <div class="card">
-            <h2>Bayesian Network From easycrochet.com</h2>
-            <p>Recommendations based on Stitches, Skill Level, Yarn Weight, Hook Size, Category.</p>
-            <button onclick="recommendPatterns('bayesianNetwork')" class="btn btn-primary">Get Recommendations</button>
-        </div>
-        <div class="card">
-            <h2>Markovian Network from crochet.com</h2>
-            <p>Recommendations based on Skill Level, Average Project Yarn Weight, Yardage Range, Hook Size, Category, Fiber Type.</p>
-            <button onclick="recommendPatterns('markovianNetwork')" class="btn btn-primary">Get Recommendations</button>
-        </div>
-        <div class="card">
-            <h2>Bayesian Network from crochet.com</h2>
-            <p>Recommendations based on Skill Level, Average Project Yarn Weight, Yardage Range, Hook Size, Category, Fiber Type.</p>
-            <button onclick="recommendPatterns('bayesNetwork2')" class="btn btn-primary">Get Recommendations</button>
-        </div>
+    <div class="title">
+        Crochet Pattern Recommendation System
     </div>
-    <script>
-        function recommendPatterns(selectedNetwork) {
-            alert(`You have selected the ${selectedNetwork}. The recommendations will be generated based on this network.`);
-        }
-    </script>
+    <div class="container">
+        <form action="/submit" method="post">
+            <div class="card">
+                <h2>Bayesian Network From easycrochet.com</h2>
+                <p>Recommendations based on Stitches, Skill Level, Yarn Weight, Hook Size, Category.</p>
+                <button type="submit" name="recommendationEngine" value="bayesianNetwork" class="btn-primary">Get Recommendations</button>
+            </div>
+        </form>
+        <form action="/submit" method="post">
+            <div class="card">
+                <h2>Markovian Network from crochet.com</h2>
+                <p>Recommendations based on Skill Level, Average Project Yarn Weight, Yardage Range, Hook Size, Category, Fiber Type.</p>
+                <button type="submit" name="recommendationEngine" value="markovianNetwork" class="btn-primary">Get Recommendations</button>
+            </div>
+        </form>
+        <form action="/submit" method="post">
+            <div class="card">
+                <h2>Bayesian Network from crochet.com</h2>
+                <p>Recommendations based on Skill Level, Average Project Yarn Weight, Yardage Range, Hook Size, Category, Fiber Type.</p>
+                <button type="submit" name="recommendationEngine" value="bayesianNetwork2" class="btn-primary">Get Recommendations</button>
+            </div>
+        </form>
+    </div>
 </body>
 </html>

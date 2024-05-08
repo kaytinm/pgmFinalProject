@@ -355,33 +355,36 @@ def get_user_input_for_attributes(recommendation_attributes, data):
     return input_data, recommendation_attributes
 
 
+
 # GLOBAL USE FOR WEBSITE
-filename = "crochet_patterns2.csv"
-data = pattern_csv_to_df(filename)
 
-recommendation_attributes = [
-    'Skill Level', 'Average Yarn Weight',
-    'Fiber Type', 'Yardage Range', 'Category', 'Average Hook Size'
+def start3():
+    filename = "crochet_patterns2.csv"
+    data = pattern_csv_to_df(filename)
 
-]
-recommendation_attributes_orig = recommendation_attributes.copy()
-recommendation_attributes_out = [
-'Title','Skill Level', 'Yarn Weight', 'Average Yarn Weight'
-    'Fiber Type', 'Yardage', 'Yardage Range', 'Category', 'Hook Size','Average Hook Size', 'Pattern Link'
-]
-attributes = recommendation_attributes.copy()
+    recommendation_attributes = [
+        'Skill Level', 'Average Yarn Weight',
+        'Fiber Type', 'Yardage Range', 'Category', 'Average Hook Size'
 
-model_structure = define_network_structure()
-recommendation_data = data[recommendation_attributes]
-model1,model2 = build_and_learn_model(recommendation_data, model_structure, doplot=True)
-inference_engine = VariableElimination(model1)
+    ]
+    recommendation_attributes_orig = recommendation_attributes.copy()
+    recommendation_attributes_out = [
+        'Title', 'Skill Level', 'Yarn Weight', 'Average Yarn Weight'
+                                               'Fiber Type', 'Yardage', 'Yardage Range', 'Category', 'Hook Size',
+        'Average Hook Size', 'Pattern Link'
+    ]
+    attributes = recommendation_attributes.copy()
 
-# Define attributes for recommendation
-recommendation_attributes_orig = recommendation_attributes
-recommendation_attribute = None
+    model_structure = define_network_structure()
+    recommendation_data = data[recommendation_attributes]
+    model1, model2 = build_and_learn_model(recommendation_data, model_structure)
+    inference_engine = VariableElimination(model1)
 
+    # Define attributes for recommendation
+    recommendation_attribute = None
+    return model1, recommendation_attributes, inference_engine, recommendation_attributes, data
 
-def process_input_data3(form_data):
+def process_input_data3(form_data, recommendation_attributes):
     input_data = {}
 
     # Process standard attributes
@@ -435,7 +438,7 @@ def encode_user_input(attributes, user_inputs, mappings):
 
 
 # Web app
-def recommend_patterns_from_model(input_data):
+def recommend_patterns_from_model(input_data,recommendation_attributes, inference_engine, data):
     print(input_data)
     #encoded_input = encode_user_input(recommendation_attributes_orig, input_data, mappings)
     input_data = {k: v for k, v in input_data.items() if v is not None}
@@ -474,12 +477,12 @@ def recommend_patterns_from_model(input_data):
         return pd.DataFrame()
 
 # Web app
-def get_recommendation_for_attribute3(recommendation_attribute, input_data):
+def get_recommendation_for_attribute3(recommendation_attribute, input_data, recommendation_attributes, inference_engine):
     #encoded_input = encode_user_input(recommendation_attributes_orig, input_data, mappings)
 
     input_data = {k: v for k, v in input_data.items() if v is not None}
-    while recommendation_attribute not in recommendation_attributes_orig or recommendation_attribute in input_data:
-        if recommendation_attribute not in recommendation_attributes_orig:
+    while recommendation_attribute not in recommendation_attributes or recommendation_attribute in input_data:
+        if recommendation_attribute not in recommendation_attributes:
             print(f"Invalid attribute. Choose from: {', '.join(recommendation_attributes)}")
         if recommendation_attribute in input_data:
             print("You've already specified this attribute. Please choose another one.")
