@@ -178,7 +178,7 @@ def pattern_csv_to_df(filename):
 
 
 # Baysian Model Section
-def define_bayesian_network_structure():
+def define_bayesian_network_structure(unique_stitches):
     # Basic structure based on domain knowledge
 
     model_structure = [
@@ -334,55 +334,56 @@ def get_user_input_for_attributes(recommendation_attributes, data):
 
 
 # GLOBAL USE FOR WEBSITE
-filename = "venv/crochet_patterns.csv"
-data, unique_stitches = pattern_csv_to_df(filename)
+def start1():
+    filename = "crochet_patterns.csv"
+    data, unique_stitches = pattern_csv_to_df(filename)
 
-recommendation_attributes = [
+    recommendation_attributes = [
+            'Skill Level', 'Yarn Weight',
+            'Hook Size', 'Category'
+        ]
+    recommendation_attributes_orig = [
         'Skill Level', 'Yarn Weight',
-        'Hook Size', 'Category'
+        'Hook Size', 'Category', 'Stitches'  # , 'Yarn Brand', 'Color', , 'Stitches'
     ]
-recommendation_attributes_orig = [
-    'Skill Level', 'Yarn Weight',
-    'Hook Size', 'Category', 'Stitches'  # , 'Yarn Brand', 'Color', , 'Stitches'
-]
-recommendation_attributes_out = [
-    'Title','Skill Level', 'Yarn Weight',
-    'Hook Size', 'Category', 'Stitches', 'Pattern Link'  # , 'Yarn Brand', 'Color', , 'Stitches'
-]
-attributes = recommendation_attributes.copy()
+    recommendation_attributes_out = [
+        'Title','Skill Level', 'Yarn Weight',
+        'Hook Size', 'Category', 'Stitches', 'Pattern Link'  # , 'Yarn Brand', 'Color', , 'Stitches'
+    ]
+    attributes = recommendation_attributes.copy()
 
-recommendation_attributes.extend(unique_stitches)
-# Build and learn the Bayesian model
-model_structure = define_bayesian_network_structure()
-recommendation_data = data[recommendation_attributes]
-bayesian_model, mappings = build_and_learn_bayesian_model(recommendation_data, model_structure, doplot=True)
-inference_engine = VariableElimination(bayesian_model)
+    recommendation_attributes.extend(unique_stitches)
+    # Build and learn the Bayesian model
+    model_structure = define_bayesian_network_structure(unique_stitches)
+    recommendation_data = data[recommendation_attributes]
+    bayesian_model, mappings = build_and_learn_bayesian_model(recommendation_data, model_structure, doplot=False)
+    inference_engine = VariableElimination(bayesian_model)
 
-# Define attributes for recommendation
-recommendation_attributes_orig = [
-        'Skill Level', 'Yarn Weight',
-        'Hook Size', 'Category', 'Stitches' #, 'Yarn Brand', 'Color'
-]
-recommendation_attribute = None
+    # Define attributes for recommendation
+    recommendation_attributes_orig = [
+            'Skill Level', 'Yarn Weight',
+            'Hook Size', 'Category', 'Stitches' #, 'Yarn Brand', 'Color'
+    ]
+    recommendation_attribute = None
+    return recommendation_attributes, recommendation_attributes_out, recommendation_attributes_orig, inference_engine, mappings, data, unique_stitches
 
+def process_input_data(form_data, data):
+        input_data = {}
+        stitches_names = data.keys().to_list()[data.keys().to_list().index('Pattern Link') + 1:]  # Adjust based on your data's column names for stitches
 
-def process_input_data(form_data):
-    input_data = {}
-    stitches_names = data.keys().to_list()[data.keys().to_list().index('Pattern Link') + 1:]  # Adjust based on your data's column names for stitches
-
-    # Process standard attributes
-    for attr in ['Skill Level', 'Yarn Weight', 'Hook Size', 'Category', 'Stitches']:
-        if attr in form_data and form_data[attr]:
-            try:
-                if attr in ['Skill Level', 'Yarn Weight']:
-                    input_data[attr] = int(form_data[attr])
-                elif attr == 'Hook Size':
-                    input_data[attr] = float(form_data[attr])
-                else:
-                    input_data[attr] = form_data[attr]
-            except ValueError:
-                continue
-    return input_data
+        # Process standard attributes
+        for attr in ['Skill Level', 'Yarn Weight', 'Hook Size', 'Category', 'Stitches']:
+            if attr in form_data and form_data[attr]:
+                try:
+                    if attr in ['Skill Level', 'Yarn Weight']:
+                        input_data[attr] = int(form_data[attr])
+                    elif attr == 'Hook Size':
+                        input_data[attr] = float(form_data[attr])
+                    else:
+                        input_data[attr] = form_data[attr]
+                except ValueError:
+                    continue
+        return input_data
 
 
 def get_top_recommendations(result, top_n=1):
@@ -433,7 +434,7 @@ def encode_user_input(attributes, user_inputs, mappings):
 
 
 # Web app
-def recommend_patterns_from_bayes(input_data, inference_engine=inference_engine):
+def recommend_patterns_from_bayes(input_data, inference_engine, recommendation_attributes_orig, mappings, data, recommendation_attributes, recommendation_attributes_out ):
     encoded_input = encode_user_input(recommendation_attributes_orig, input_data, mappings)
     input_data = {k: v for k, v in encoded_input.items() if v is not None}
     probable_attributes = {}
@@ -486,12 +487,12 @@ def recommend_patterns_from_bayes(input_data, inference_engine=inference_engine)
         return pd.DataFrame()
 
 # Web app
-def get_recommendation_for_attribute(recommendation_attribute, input_data):
+def get_recommendation_for_attribute(recommendation_attribute, input_data, recommendation_attributes_orig, mappings, recommendation_attributes, unique_stitches, inference_engine):
     encoded_input = encode_user_input(recommendation_attributes_orig, input_data, mappings)
     input_data = {k: v for k, v in encoded_input.items() if v is not None}
     if recommendation_attribute not in recommendation_attributes_orig or recommendation_attribute in input_data:
         if recommendation_attribute not in recommendation_attributes_orig:
-            print(f"Invalid attribute. Choose from: {', '.join(recommendation_attributes)}")
+            print(f"Invalid attribute. Choose from: {', '.join(recommendation_attributes_orig)}")
         if recommendation_attribute in input_data:
             print("You've already specified this attribute. Please choose another one.")
         return {}
@@ -698,7 +699,7 @@ def evaluate_model(df, recommendation_attributes, category_eval="Hook Size"):
     print("R-squared:", r2)
 
 
-def evaluate_model_attributes(attributes):
+def evaluate_model_attributes(attributes, data):
     print("Evaluate Hook Size")
     evaluate_model(data, attributes, category_eval="Hook Size")
     print("Evaluate Skill Level")

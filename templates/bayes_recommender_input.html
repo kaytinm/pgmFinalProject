@@ -68,7 +68,7 @@
     </div>
    <div class="container mt-5">
         <h1>Enter Pattern Details</h1>
-        <form action="/submit" method="post">
+        <form action="{{ url_for('bayesian_recommender') }}" method="post">
             <div class="form-group">
                 <label for="skillLevel">Skill Level:</label>
                 <select name="Skill Level" class="form-control" id="skillLevel">
