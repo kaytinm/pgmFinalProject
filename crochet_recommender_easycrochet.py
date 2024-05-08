@@ -356,7 +356,7 @@ def start1():
     # Build and learn the Bayesian model
     model_structure = define_bayesian_network_structure(unique_stitches)
     recommendation_data = data[recommendation_attributes]
-    bayesian_model, mappings = build_and_learn_bayesian_model(recommendation_data, model_structure, doplot=False)
+    bayesian_model, mappings = build_and_learn_bayesian_model(recommendation_data, model_structure, unique_stitches, doplot=False)
     inference_engine = VariableElimination(bayesian_model)
 
     # Define attributes for recommendation
