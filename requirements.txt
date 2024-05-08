@@ -1,8 +1,7 @@
 Flask
-Flask-Session
-requests
-beautifulsoup4
 pgmpy
 numpy
-pandas
 scikit-learn
+pandas
+networkx
+matplotlib

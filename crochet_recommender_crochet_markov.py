@@ -6,7 +6,7 @@ from pgmpy.inference import VariableElimination
 from sklearn.model_selection import train_test_split
 import re
 import pandas as pd
-from pgmpy.models import BayesianNetwork
+from pgmpy.models import MarkovNetwork
 import networkx as nx
 import matplotlib.pyplot as plt
 from pgmpy.factors.discrete import DiscreteFactor
@@ -56,21 +56,19 @@ def get_yardage_range(data):
             min_yard, max_yard = map(int, yardage_str.split('-'))
             return round(((max_yard + min_yard)/2), -2)
         else:
-            return round(float(yardage_str), -2)  # Return 0 for single values since there's no range
+            return round(float(yardage_str), -2)
 
-    # Calculate average yardage for each entry
     copy_data['Average Yardage'] = copy_data['Yardage'].apply(average_yardage)
 
     bins = [0, 4999, 9999, 14999, 19999, 20000]
     bin_labels = ['0-4999', '5000-9999', '10000-14999', '15000-19999', '20000+']
 
-    # Categorize the average yardage into bins
     copy_data['Yardage Range'] = pd.cut(copy_data['Average Yardage'], bins=bins, labels=bin_labels, right=False)
 
-    # Convert the bins to string representations
     data['Yardage Range'] = copy_data['Yardage Range'].astype(str)
 
     return data
+
 
 
 def average_weight(yarn_weight_string):
@@ -84,16 +82,15 @@ def average_weight(yarn_weight_string):
         'Bulky': 7,
         'Super Bulky': 8
     }
-    # Split the string by commas and strip any surrounding whitespace
     weights = yarn_weight_string.split(',')
     weights = [w.strip() for w in weights]
 
-    # Convert yarn weights to numeric values
     numeric_weights = [yarn_weights[weight] for weight in weights if weight in yarn_weights]
 
-    # Return the average of these values
     if numeric_weights:
-        return sum(numeric_weights) / len(numeric_weights)
+        #return max(set(numeric_weights))
+        #return str(weights)
+        return round(sum(numeric_weights) / len(numeric_weights),1)
     else:
         return -1  # In case of a typo or unrecognised yarn weight
 
@@ -102,11 +99,9 @@ def extract_number(text):
     # Search for numbers in the string
     match = re.search(r'\d+', text)
     if match:
-        return int(match.group())  # Return the number if found
-    return np.nan  # Return the original text if no number is found
-# Function to find numbers, calculate the mean if multiple
+        return int(match.group())
+    return np.nan
 
-#TODO: Shouldn't actually be extracting mean size change later
 def extract_mean_size(text):
     # Find all numbers (integers or decimals) before "mm"
     if text == '9” High x 25” Circumference': # Special Case
@@ -114,36 +109,28 @@ def extract_mean_size(text):
     numbers = re.findall(
         r'\b\d+\.?\d*(?=\s*mm)|(?<=/)\d+\.?\d*|\b\d+\.?\d*(?=/)|(?<=")\s*\d+\.?\d*|\b\d+\.?\d*(?=\s*")', text)
 
-    # Convert all found numbers to float and calculate mean if multiple values are found
     if numbers:
-        numbers = list(map(float, numbers))  # Convert to float for accurate mean calculation
+        numbers = list(map(float, numbers))
         if len(numbers) > 1:
+            #return str(numbers)
             return round((sum(numbers) / len(numbers))*4)/4 # Return the mean of the numbers round hook sizes are by .25s
-        return numbers[0] # Return the number directly if only one
+        return (numbers[0])#round(numbers[0]*4)/4 # Return the number directly if only one
     else:
-        return -1  # Return the original text if no numbers are found
+        return -1
 
 
 def pattern_csv_to_df(filename):
-    # Read CSV into DataFrame
     df = pd.read_csv(filename)
 
-    # Process and clean the data
     df = df.drop_duplicates(subset=['Title', 'Pattern Link'])
     df.dropna(subset=['Skill Level', 'Yarn Weight', 'Hook Size', 'Fiber Type'], inplace=True)
 
-    # Clean whitespace
     df = df.applymap(lambda x: x.strip() if isinstance(x, str) else x)
     # TODO: Change Yarn Name and Yarn Brand to Fiber Type
-    # Find Fiber type from Yarn Name and Yarn Brand, the fiber type has a greater influence on the pattern that will be chosen
-    # Yarn Weight and the yarn being used is dirrectly correlated however fiber type has more of an influence on category
-    # More natural yarns like whool, cotton, or bamboo tend to be prefered for clothing as it creates a more high quality garment
-    # Whereas using more expensive natural yarns don't make as much sense for a stuffed animal or a household accessory
-    # Handle Different types of values for processing
+
     df['Average Hook Size'] = df['Hook Size'].apply(extract_mean_size)
     df['Category'] = df.apply(update_category, axis=1)
     df = get_yardage_range(df)
-    # Color doesn't have an impact in this case and doesn't really effect the pattern since a different color yarn can be picked
     df['Average Yarn Weight'] = df['Yarn Weight'].apply(average_weight)
     unique_vals = df.apply(lambda x: x.unique())
     return df
@@ -151,24 +138,14 @@ def pattern_csv_to_df(filename):
 
 
 # Baysian Model Section
+#TODO: change to markov model
 def define_network_structure():
-    # Basic structure based on domain knowledge
     model_structure = [
-        # Working with different sized yarns can impact the skill level for a project using a small yarn can tend to be difficult
-        # generally yarn weight impacts the hook size as the yarn weight increases the hook you should use tends to increase
         ('Average Yarn Weight', 'Skill Level'),
         ('Average Yarn Weight', 'Average Hook Size'),
         ('Average Hook Size', 'Category'),
-        # Hook sizes tend to change with the category you generally use a smaller hook size for a armigrumi since it i
-        # Some fiber types are less likely to have certian yarn weights
-        # for example it is harder to find a silk or bamboo yarn in a large weight
-        # Hobii.com has no bamboo yarn over weight 4
         ('Fiber Type', 'Average Yarn Weight'),
-        # Some fiber types are more popular than others for certian projects
-        # For example cotton
         ('Fiber Type', 'Category'),
-
-        # The category
         ('Yardage Range', 'Category')
     ]
     return model_structure
@@ -176,16 +153,12 @@ def define_network_structure():
 
 def plot_network(model_structure):
     G = nx.DiGraph(model_structure)
-    pos = {
-        'Fiber Type': (0.5, 1),
-        'Average Yarn Weight': (0.3, 0.7),
-        'Average Hook Size': (0.3, 0.3),
-        'Category': (0.5, 0),
-        'Yardage Range': (0.7, 0.5),
-        'Skill Level': (0, 0)
-    }
-    nx.draw_networkx_nodes(G, pos, node_size=2000, node_color='pink')
-    nx.draw_networkx_edges(G, pos, edgelist=G.edges(), arrows=True, arrowsize=10, width=2, alpha=0.5, edge_color='gray')
+    pos = nx.spring_layout(G, seed=42)
+
+    nx.draw_networkx_nodes(G, pos, node_size=2000, node_color='skyblue')
+
+    nx.draw_networkx_edges(G, pos, edgelist=G.edges(), width=2, alpha=0.5, edge_color='gray', arrows=False)
+
     nx.draw_networkx_labels(G, pos, font_size=20, font_family="sans-serif", font_weight='bold')
 
     plt.title("Network", fontsize=24)
@@ -208,65 +181,55 @@ def encode_data(data):
     encoded_data = data.copy()
     mappings = {}
     for column in data.columns:
-        # Check if the column is of a categorical type or object
         if data[column].dtype == 'object' or pd.api.types.is_categorical_dtype(data[column]):
             encoded_data[column], mapping = pd.factorize(data[column])
             mappings[column] = {label: index for index, label in enumerate(mapping)}
         else:
-            # Copy the data as is if not categorical
             encoded_data[column] = data[column]
     return encoded_data, mappings
 
 
-def calculate_probabilities(data, variables):
-    # similar to MLE
+def calculate_joint_probabilities(data, variables):
     clean_data = data.dropna(subset=variables)
     var_levels = [clean_data[var].astype('category').cat.categories for var in variables]
     all_combinations = pd.MultiIndex.from_product(var_levels, names=variables).to_frame(index=False)
-    # Calculate the joint frequency of the variables
     frequency_table = clean_data.groupby(variables).size().reset_index(name='counts')
     frequency_table = all_combinations.merge(frequency_table, on=variables, how='left').fillna(0)
-    # Convert frequency to probability
     total_counts = frequency_table['counts'].sum()
     frequency_table['probability'] = frequency_table['counts'] / total_counts
     return frequency_table
 
-from pgmpy.factors.discrete.CPD import TabularCPD
-
-def create_factors_for_network(data, model_structure):
-    model = BayesianNetwork(model_structure)
+def create_factors_for_markov_network(data, model_structure):
+    model = MarkovNetwork(model_structure)
 
     for edge in model.edges():
-        # Calculate empirical probabilities for each edge
         variables = list(edge)
-        prob_table = calculate_probabilities(data, variables)
+        prob_table = calculate_joint_probabilities(data, variables)
         state_names = {var: list(set(prob_table[var].values)) for var in variables}
         # Create a factor from the probability table
         values = prob_table['probability'].values
         cardinality = [len(data[var].unique()) for var in variables]
-        cbd = TabularCPD(variables, 2, values, state_names=state_names)
+        factor = DiscreteFactor(variables, cardinality, values, state_names=state_names)
         # Add the factor to the model
-        model.add_cpds(cbd)
+        model.add_factors(factor)
 
     return model
 
-def build_and_learn_model(data, model_structure, load=False, doplot=False):
+def build_and_learn_markov_model(data, model_structure, load=False, doplot=False):
+    # Initialize Markov Model
     _, mappings = encode_data(data)
-    model1 = BayesianNetwork(model_structure)
-    model1.fit(data, MaximumLikelihoodEstimator)
-    #model2 = create_factors_for_network(data, model_structure)
-    model2 =  BayesianNetwork(model_structure)
     if load:
-        with open('Model_Crochet_Patterns3.pkl', 'rb') as f:
+        with open('Markov_Model_Crochet_Patterns2HotEM.pkl', 'rb') as f:
             model = pickle.load(f)
         return model, mappings
     else:
+        model = create_factors_for_markov_network(data, model_structure)
 
         if doplot:
             plot_network(model_structure)
-        with open('Model_Crochet_Patterns3.pkl', 'wb') as f:
-            pickle.dump(model1, f)
-        return model1,model2
+        with open('Markov_Model_Crochet_PatternsHot2EM.pkl', 'wb') as f:
+            pickle.dump(model, f)
+        return model, mappings
 
 def user_input_for_attribute(attribute, possible_values=None):
     if possible_values:
@@ -280,9 +243,7 @@ def user_input_for_attribute(attribute, possible_values=None):
 
 # Reccomendation for specific Attribute
 def get_top_recommendations_for_attribute(result, attribute, top_n=1):
-    # Create a DataFrame from the result
     states = result.state_names[result.variables[0]]
-    #states = result.state_names[attribute]
     probabilities = result.values
     df = pd.DataFrame({
         attribute: states,
@@ -290,7 +251,6 @@ def get_top_recommendations_for_attribute(result, attribute, top_n=1):
     })
     df.sort_values('Probability', ascending=False, inplace=True)
 
-    # Get the top N results
     top_results = df.head(top_n)
     return top_results
 
@@ -298,45 +258,35 @@ def decode_attributes(encoded_attributes, mappings):
     decoded_attributes = {}
     for key, value in encoded_attributes.items():
         if key in mappings and value[0] in mappings[key]:
-            # Decode the value using the mapping
             decoded_attributes[key] = mappings[key][value[0]]
         else:
-            # If the mapping or value is not found, return the original value or handle the missing case
-            decoded_attributes[key] = "Unknown"  # Or None, or keep the encoded value as is
+            decoded_attributes[key] = "Unknown"
     return decoded_attributes
 
 
 def filter_dataframe(df, conditions):
-    # Initialize an empty list to store individual query parts
     query_parts = []
 
-    # Iterate over the dictionary to build the query string
     for key, values in conditions.items():
         if isinstance(values, list):
-            # For list values, create a query part for multiple possible matches
             conditions_list = [f"`{key}` == {repr(value)}" for value in values]
             query_parts.append(f"({' | '.join(conditions_list)})")
         else:
-            # For single values, create a standard equality condition
             query_parts.append(f"`{key}` == {repr(values)}")
 
-    # Join all conditions with an AND operator
     query_string = ' & '.join(query_parts)
 
-    # Filter the dataframe using the constructed query string
     return df.query(query_string)
 
 
 def recommend_patterns(data, attributes):
     if not attributes:
         return pd.DataFrame()  # Return empty DataFrame if no attributes are provided
-    # Start with the full dataset
     recommended_patterns = data
-    # Filter for each attribute
     for attr, values in attributes.items():
         if type(values) != list:
             values = [values]
-        if values:  # Ensure that there are specified values to filter by
+        if values:
             recommended_patterns = recommended_patterns[recommended_patterns[attr].isin(values)]
             if recommended_patterns.empty:
                 break  # Stop processing if no data meets the criteria
@@ -373,18 +323,16 @@ attributes = recommendation_attributes.copy()
 
 model_structure = define_network_structure()
 recommendation_data = data[recommendation_attributes]
-model1,model2 = build_and_learn_model(recommendation_data, model_structure, doplot=True)
-inference_engine = VariableElimination(model1)
+markov_model, mappings = build_and_learn_markov_model(recommendation_data, model_structure)
+inference_engine = VariableElimination(markov_model)
 
-# Define attributes for recommendation
 recommendation_attributes_orig = recommendation_attributes
 recommendation_attribute = None
 
 
-def process_input_data3(form_data):
+def process_input_data_markov(form_data):
     input_data = {}
 
-    # Process standard attributes
     for attr in recommendation_attributes:
         if attr in form_data and form_data[attr]:
             try:
@@ -403,7 +351,6 @@ def get_top_recommendations(result, top_n=1):
     top_probs = [0]
     top_values_indices = np.unravel_index(flat_indices, values.shape)
     no_to_name = result.no_to_name
-    # Convert indices to meaningful names using no_to_name
     top_values = {}
     for dim_index, indices in enumerate(top_values_indices):
         variable_name = result.variables[dim_index]
@@ -435,14 +382,14 @@ def encode_user_input(attributes, user_inputs, mappings):
 
 
 # Web app
-def recommend_patterns_from_model(input_data):
+def recommend_patterns_from_markov(input_data):
     print(input_data)
     #encoded_input = encode_user_input(recommendation_attributes_orig, input_data, mappings)
     input_data = {k: v for k, v in input_data.items() if v is not None}
     probable_attributes = {}
     found_match = False
     top_n = 1
-    threshold_probabilities = {}  # To store initial top probabilities for reference
+    threshold_probabilities = {}
     # TODO: Consider OR for searching based on stitches
     non_input_attributes = []
     for attr in recommendation_attributes:
@@ -474,15 +421,16 @@ def recommend_patterns_from_model(input_data):
         return pd.DataFrame()
 
 # Web app
-def get_recommendation_for_attribute3(recommendation_attribute, input_data):
+def get_recommendation_for_attribute_markov(recommendation_attribute, input_data):
     #encoded_input = encode_user_input(recommendation_attributes_orig, input_data, mappings)
 
     input_data = {k: v for k, v in input_data.items() if v is not None}
-    while recommendation_attribute not in recommendation_attributes_orig or recommendation_attribute in input_data:
+    if recommendation_attribute not in recommendation_attributes_orig or recommendation_attribute in input_data:
         if recommendation_attribute not in recommendation_attributes_orig:
             print(f"Invalid attribute. Choose from: {', '.join(recommendation_attributes)}")
         if recommendation_attribute in input_data:
             print("You've already specified this attribute. Please choose another one.")
+        return {}
     # Perform inference for attribute recommendation
     if recommendation_attribute:
         if (type(recommendation_attribute)!= list):
@@ -504,7 +452,6 @@ def find_nearest(array, value):
 
 from sklearn import metrics
 def evaluate_model(df, recommendation_attributes, target_val):
-    # Build and learn the Bayesian model
     model_structure = define_network_structure()
     train_df, test_df = train_test_split(df, test_size=0.2, random_state=42)
 
@@ -527,27 +474,23 @@ def evaluate_model(df, recommendation_attributes, target_val):
         return predictions
 
     # Train the model
-    model, _ = build_and_learn_model(train_df[recommendation_attributes], model_structure)
+    model, _ = build_and_learn_markov_model(train_df[recommendation_attributes], model_structure)
     inference = VariableElimination(model)
 
-    # Predict the 'Category' for test data
     test_df['predicted_category'] = predict(inference, test_df[recommendation_attributes], target=target_val)
     true_values = test_df[target_val]
     predicted_values = test_df['predicted_category']
-    if "Average" in target_val:  # encode for categorical for evaluation
+    if "Average" in target_val:  # encode
         combined_list = list(true_values.copy())
         combined_list.extend(predicted_values)
         unique_values = sorted(set(combined_list))
 
-        # Create a dictionary to map each unique value to a unique code
         encoding_dict = {value: idx for idx, value in enumerate(unique_values, start=1)}
 
-        # Encode both lists
         encoded_list1 = [encoding_dict[value] for value in true_values.values]
         true_values = encoded_list1
         encoded_list2 = [encoding_dict[value] for value in predicted_values]
         predicted_values = encoded_list2
-    # Evaluate accuracy
     accuracy = metrics.accuracy_score(true_values, predicted_values)
     print(f"Accuracy units: {accuracy:.2f}")
 
@@ -583,17 +526,15 @@ def main():
     attributes = recommendation_attributes.copy()
     model_structure = define_network_structure()
     #plot_network(model_structure)
-    # Build and learn the markov model
-    model1,model2 = build_and_learn_model(recommendation_data, model_structure)
-    inference_engine = VariableElimination(model1)
-    # Define attributes for recommendation
+    markov_model, mappings = build_and_learn_markov_model(recommendation_data, model_structure)
+    inference_engine = VariableElimination(markov_model)
 
     recommendation_attribute = None
     input_data, recommendation_attributes = get_user_input_for_attributes(recommendation_attributes, data)
 
     #encoded_input = encode_user_input(recommendation_attributes, input_data, mappings)
    # cleaned_data = {k: v for k, v in encoded_input.items() if v is not None}
-    recommended_patterns = recommend_patterns_from_model(input_data)
+    recommended_patterns = recommend_patterns_from_markov(input_data)
    # recommended_patterns = recommend_patterns_from_input(recommendation_attributes, cleaned_data, inference_engine,
     #                                                     data)
     print("Recommended Patterns:")

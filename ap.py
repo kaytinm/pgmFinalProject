@@ -1,8 +1,8 @@
 from flask import Flask, render_template, request, redirect, url_for, session
 from flask_session import Session  # Assuming Flask-Session is installed and configured
-from crochet_recommender_hot import *
-from crochet_recommender_2 import *
-from crochet_recommender_3 import *
+from crochet_recommender_easycrochet import *
+from crochet_recommender_crochet_markov import *
+from crochet_recommender_crochet_bayes import *
 app = Flask(__name__)
 app.config["SESSION_PERMANENT"] = False
 app.config["SESSION_TYPE"] = "filesystem"

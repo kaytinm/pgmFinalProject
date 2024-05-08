@@ -14,6 +14,7 @@ from sklearn.metrics import mean_absolute_error
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import precision_recall_fscore_support
 import random
+import pickle
 
 # Data collection and preperation section
 def update_category(row):
@@ -67,9 +68,7 @@ def preprocess_stitches(df):
             return 'Tunisian'
         for keyword in keywords:
             if keyword in stitch:
-                # Remove keyword and split by spaces to handle cases like 'Single Crochet Two Together'
                 parts = stitch.replace(keyword, '')
-                # Remove empty strings resulting from split and replace original stitch name
                 if keyword in include_keywords:
                     return keyword + ',' + parts
                 elif keyword in decrease_keywords:
@@ -119,9 +118,7 @@ def get_unique_stitches(df):
     return unique_stitches_set
 
 def hot_one_encode_stitches(data):
-    # Split the 'Stitches' column into individual stitches
     stitch_columns = data['Stitches'].str.get_dummies(sep=',')
-    # Merge these new columns back into the original DataFrame
     data = pd.concat([data, stitch_columns], axis=1)
     return data
 
@@ -129,21 +126,18 @@ def extract_number(text):
     # Search for numbers in the string
     match = re.search(r'\d+', text)
     if match:
-        return int(match.group())  # Return the number if found
-    return np.nan  # Return the original text if no number is found
-# Function to find numbers, calculate the mean if multiple
+        return int(match.group())
+    return np.nan
 
-#TODO: Shouldn't actually be extracting mean size change later
 def extract_mean_size(text):
     # Find all numbers (integers or decimals) before "mm"
     numbers = re.findall(r'\b\d+\.?\d*(?=\s*mm)', text)
-    # Convert all found numbers to float and calculate mean if multiple values are found
     if numbers:
-        numbers = list(map(float, numbers))  # Convert to float for accurate mean calculation
+        numbers = list(map(float, numbers))
         if len(numbers) > 1:
-            return sum(numbers) / len(numbers)  # Return the mean of the numbers
-        return numbers[0]  # Return the number directly if only one
-    return text  # Return the original text if no numbers are found
+            return sum(numbers) / len(numbers)
+        return numbers[0]
+    return text
 
 def check_multiple_colors(color):
     if str(color) == 'nan':
@@ -165,7 +159,6 @@ def preprocess_stitches_for_bayesian_network(data):
 
 
 def pattern_csv_to_df(filename):
-    # Read CSV into DataFrame
     df = pd.read_csv(filename)
 
     # Process and clean the data
@@ -174,13 +167,6 @@ def pattern_csv_to_df(filename):
 
     # Clean whitespace
     df = df.applymap(lambda x: x.strip() if isinstance(x, str) else x)
-    # TODO: Change Yarn Name and Yarn Brand to Fiber Type
-    # Find Fiber type from Yarn Name and Yarn Brand, the fiber type has a greater influence on the pattern that will be chosen
-    # Yarn Weight and the yarn being used is dirrectly correlated however fiber type has more of an influence on category
-    # More natural yarns like whool, cotton, or bamboo tend to be prefered for clothing as it creates a more high quality garment
-    # Whereas using more expensive natural yarns don't make as much sense for a stuffed animal or a household accessory
-    # Handle Different types of values for processing
-    #df['Fiber Type'] = df.apply(determine_fiber_type, axis=1)
     df['Yarn Weight'] = df['Yarn Weight'].apply(extract_number)
     df['Skill Level'] = df['Skill Level'].apply(extract_number)
     df['Hook Size'] = df['Hook Size'].apply(extract_mean_size)
@@ -197,12 +183,8 @@ def define_bayesian_network_structure():
 
     model_structure = [
         ('Yarn Weight', 'Skill Level'),
-        # generally yarn weight impacts the hook size as the yarn weight increases the hook you should use tends to increase
         ('Yarn Weight', 'Hook Size'),
         ('Hook Size', 'Category')
-        # Working with different sized yarns can impact the skill level for a project using a small yarn can tend to be difficult
-
-        # Hook sizes tend to change with the category you generally use a smaller hook size for a armigrumi since it i
     ]
     model_structure += [(stitch, 'Skill Level') for stitch in unique_stitches]
     return model_structure
@@ -216,16 +198,14 @@ def plot_bayesian_network(edges, stitches):
             target = 'Stitches'
         G.add_edge(source, target)
 
-        # Remove self-loops on 'stitches' node if any
     G.remove_edges_from(nx.selfloop_edges(G))
 
-    # Graph layout for a clear hierarchy
     pos = {
         "Yarn Weight": (0.5, 1),  # Top-most level
         "Hook Size": (0.3, 0.5),  # Middle , left
         "Category": (0.3, 0),  # Bottom , left
         "Skill Level": (0.7, 0),  # Bottom , right
-        "Stitches": (0.5, 0.3) # right, middle
+        "Stitches": (1, 0.3) # right, middle
     }
 
     node_colors = ['yellow' if node == 'Stitches' else 'pink' for node in G.nodes()]
@@ -249,7 +229,6 @@ def plot_bayesian_network(edges, stitches):
     plt.show()
 
 
-import pickle
 
 def save_model(model, filename):
     with open(filename, 'wb') as f:
@@ -264,12 +243,10 @@ def encode_data(data):
     encoded_data = data.copy()
     mappings = {}
     for column in data.columns:
-        # Check if the column is of a categorical type or object
         if data[column].dtype == 'object' or pd.api.types.is_categorical_dtype(data[column]):
             encoded_data[column], mapping = pd.factorize(data[column])
             mappings[column] = {label: index for index, label in enumerate(mapping)}
         else:
-            # Copy the data as is if not categorical
             encoded_data[column] = data[column]
     return encoded_data, mappings
 
@@ -302,9 +279,7 @@ def user_input_for_attribute(attribute, possible_values=None):
 
 # Reccomendation for specific Attribute
 def get_top_recommendations_for_attribute(result, attribute, top_n=1):
-    # Create a DataFrame from the result
     states = result.state_names[result.variables[0]]
-    #states = result.state_names[attribute]
     probabilities = result.values
     df = pd.DataFrame({
         attribute: states,
@@ -312,7 +287,6 @@ def get_top_recommendations_for_attribute(result, attribute, top_n=1):
     })
     df.sort_values('Probability', ascending=False, inplace=True)
 
-    # Get the top N results
     top_results = df.head(top_n)
     return top_results
 
@@ -324,7 +298,7 @@ def decode_attributes(encoded_attributes, mappings):
             decoded_attributes[key] = mappings[key][value[0]]
         else:
             # If the mapping or value is not found, return the original value or handle the missing case
-            decoded_attributes[key] = "Unknown"  # Or None, or keep the encoded value as is
+            decoded_attributes[key] = "Unknown"
     return decoded_attributes
 
 
@@ -337,10 +311,10 @@ def recommend_patterns(data, attributes):
     for attr, values in attributes.items():
         if type(values) != list:
             values = [values]
-        if values:  # Ensure that there are specified values to filter by
+        if values:
             recommended_patterns = recommended_patterns[recommended_patterns[attr].isin(values)]
             if recommended_patterns.empty:
-                break  # Stop processing if no data meets the criteria
+                break
     return recommended_patterns.drop_duplicates()
 
 # Get user inputs for available attributes
@@ -381,7 +355,7 @@ recommendation_attributes.extend(unique_stitches)
 # Build and learn the Bayesian model
 model_structure = define_bayesian_network_structure()
 recommendation_data = data[recommendation_attributes]
-bayesian_model, mappings = build_and_learn_bayesian_model(recommendation_data, model_structure, doplot=False)
+bayesian_model, mappings = build_and_learn_bayesian_model(recommendation_data, model_structure, doplot=True)
 inference_engine = VariableElimination(bayesian_model)
 
 # Define attributes for recommendation
@@ -436,8 +410,6 @@ def encode_user_input(attributes, user_inputs, mappings):
     for attribute in attributes:
         if attribute in user_inputs:
             if 'Stitches' == attribute:
-                # Convert the input string to a list of stitch names, trimming whitespace
-                # If user_inputs['Stitches'] is a string like "stitch1, stitch2, stitch3"
                 stitch_list = []
                 if (type(user_inputs['Stitches']) == list):
                     stitch_list = user_inputs['Stitches']
@@ -452,10 +424,8 @@ def encode_user_input(attributes, user_inputs, mappings):
                 elif attribute not in mappings:
                     encoded_input[attribute] = user_inputs[attribute]
                 else :
-                    # Handle unseen categories or missing mappings
                     encoded_input[attribute] = -1
         else:
-            # Handle missing attributes if necessary
             if attribute != "Stitches":
                 encoded_input[attribute] = None
     return encoded_input
@@ -469,15 +439,8 @@ def recommend_patterns_from_bayes(input_data, inference_engine=inference_engine)
     probable_attributes = {}
     found_match = False
     top_n = 1
-    threshold_probabilities = {}  # To store initial top probabilities for reference
+    threshold_probabilities = {}
     recommended_patterns = recommend_patterns(data, input_data)
-    if recommended_patterns.empty:
-        print("No pattern match for given input data")
-        #return pd.DataFrame()
-    elif recommended_patterns.shape[0] == 1:
-        print("Already only one pattern for given input data")
-        #return recommended_patterns
-    # TODO: Consider OR for searching based on stitches
     non_input_attributes = []
     for attr in recommendation_attributes:
         if attr not in input_data:
@@ -504,10 +467,10 @@ def recommend_patterns_from_bayes(input_data, inference_engine=inference_engine)
                                 break
                     # Initialize threshold for the first time
                     if top_n == 1:
-                        threshold_probabilities[attr] = .1  # set a threshold to 10%
+                        threshold_probabilities[attr] = .1
             else:
                 new_values[attr] = [input_data[attr]]
-                if attr in mappings.keys(): # directly use the provided input
+                if attr in mappings.keys():
                     for key, value in mappings[attr].items():
                         if value == input_data[attr]:
                             new_values[attr] = [key]
@@ -526,11 +489,12 @@ def recommend_patterns_from_bayes(input_data, inference_engine=inference_engine)
 def get_recommendation_for_attribute(recommendation_attribute, input_data):
     encoded_input = encode_user_input(recommendation_attributes_orig, input_data, mappings)
     input_data = {k: v for k, v in encoded_input.items() if v is not None}
-    while recommendation_attribute not in recommendation_attributes_orig or recommendation_attribute in input_data:
+    if recommendation_attribute not in recommendation_attributes_orig or recommendation_attribute in input_data:
         if recommendation_attribute not in recommendation_attributes_orig:
             print(f"Invalid attribute. Choose from: {', '.join(recommendation_attributes)}")
         if recommendation_attribute in input_data:
             print("You've already specified this attribute. Please choose another one.")
+        return {}
     # Perform inference for attribute recommendation
     if recommendation_attribute:
         if recommendation_attribute == "Stitches":
@@ -602,7 +566,7 @@ def evaluate_model(df, recommendation_attributes, category_eval="Hook Size"):
         array = np.asarray(array)
         idx = (np.abs(array - value)).argmin()
         return array[idx]
-    # Generate predictions for a specified column
+
     def predict(model, data, target, known_values):
         inference = VariableElimination(model)
         predictions = []
@@ -648,7 +612,6 @@ def evaluate_model(df, recommendation_attributes, category_eval="Hook Size"):
     bayesian_model, mappings = build_and_learn_bayesian_model(data[rec_attrs], model_structure)
 
 
-    # Predict the 'Category' for test data
     if category_eval == "Stitches":
         true_values = {}
         stitch_map = predict(bayesian_model, test_df, category_eval, known_values)
@@ -736,7 +699,7 @@ def evaluate_model(df, recommendation_attributes, category_eval="Hook Size"):
 
 
 def evaluate_model_attributes(attributes):
-    ("Evaluate Hook Size")
+    print("Evaluate Hook Size")
     evaluate_model(data, attributes, category_eval="Hook Size")
     print("Evaluate Skill Level")
     evaluate_model(data, attributes, category_eval="Skill Level")
@@ -766,7 +729,6 @@ def main():
     # Build and learn the Bayesian model
     bayesian_model, mappings = build_and_learn_bayesian_model(recommendation_data, model_structure)
     inference_engine = VariableElimination(bayesian_model)
-    # Define attributes for recommendation
 
     recommendation_attributes_orig = [
         'Skill Level', 'Yarn Weight',
